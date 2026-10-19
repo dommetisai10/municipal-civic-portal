@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lodge a Grievance | Municipal Service Portal</title>
+  <meta name="description" content="Submit civic grievances and complaints regarding sanitation, roads, streetlighting, water, or municipal services with photo evidence and geolocation.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Accessibility Skip Link -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Top System Status Bar -->
+  <div class="top-notice-bar" role="region" aria-label="System Notice and Status">
+    <div class="container">
+      <div>
+        <span>Demonstration Civic Portal — Clean Data Architecture</span>
+      </div>
+      <div class="db-status-pill" id="db-connection-badge" title="Live MongoDB connectivity status">
+        <span class="status-dot" id="db-status-dot"></span>
+        <span id="db-status-text">Checking database...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header & Navigation -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-link" id="brand-home-link" aria-label="Municipal Service Portal Home">
+        <div class="brand-icon" aria-hidden="true">MSP</div>
+        <div class="brand-text">
+          <span class="brand-name dynamic-portal-name">Municipal Service Portal</span>
+          <span class="brand-tagline">Citizen Services &amp; Grievances</span>
+        </div>
+      </a>
+
+      <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="main-nav">
+        ☰
+      </button>
+
+      <nav class="main-nav" id="main-nav" aria-label="Main Navigation">
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link" id="nav-link-home">Home</a></li>
+          <li><a href="services.html" class="nav-link" id="nav-link-services">Services</a></li>
+          <li><a href="submit-complaint.html" class="nav-link active" id="nav-link-complaint">Submit Complaint</a></li>
+          <li><a href="track-status.html" class="nav-link" id="nav-link-track">Track Status</a></li>
+        </ul>
+
+        <div class="nav-actions" id="nav-auth-actions">
+          <a href="login.html" class="btn btn-sm btn-outline" id="nav-login-btn">Sign In</a>
+          <a href="register.html" class="btn btn-sm btn-primary" id="nav-register-btn">Register</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main-content" class="py-8">
+    <div class="container container-md">
+      
+      <!-- Breadcrumb Navigation -->
+      <nav class="breadcrumb-nav mb-4" aria-label="Breadcrumb">
+        <ol class="breadcrumb">
+          <li><a href="index.html">Home</a></li>
+          <li aria-current="page">Lodge Grievance</li>
+        </ol>
+      </nav>
+
+      <!-- Auth Required Prompt (shown if unauthenticated) -->
+      <div id="auth-required-card" class="card card-warning d-none">
+        <div class="alert-icon">🔒</div>
+        <div>
+          <h3>Citizen Authentication Required</h3>
+          <p class="text-muted mb-4">
+            You must be signed in as a verified citizen to register an official municipal complaint. 
+            All submissions are recorded with an audit trail to ensure accountability and response tracking.
+          </p>
+          <div class="btn-group">
+            <a href="login.html" id="auth-login-link" class="btn btn-primary">Sign In to Continue</a>
+            <a href="register.html" class="btn btn-outline">Create Citizen Account</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Complaint Form Container -->
+      <div id="complaint-form-container">
+        
+        <!-- Header Strip -->
+        <div class="page-header-strip rounded-header-strip mb-6">
+          <div class="container">
+            <span class="badge badge-info">Civic Grievance Redressal</span>
+            <h1 class="text-2xl font-bold mt-2 mb-2 text-white">Lodge a Municipal Complaint</h1>
+            <p class="text-sm text-primary-100">
+              Report civic issues regarding sanitation, broken streetlights, water supply, potholes, or drainage. 
+              Our municipal officers will review and address your grievance based on department jurisdiction.
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
+          <form id="complaint-form" novalidate>
+            
+            <div class="form-section-header">
+              <h3>1. Grievance Particulars</h3>
+              <p class="text-muted text-xs">Specify the category and nature of the civic defect.</p>
+            </div>
+
+            <!-- Title -->
+            <div class="form-group">
+              <label for="complaint-title" class="form-label">
+                Complaint Title / Brief Summary <span class="text-danger">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="complaint-title" 
+                name="title" 
+                class="form-control" 
+                placeholder="e.g. Broken streetlight causing nighttime darkness on 4th Cross Road"
+                required
+                minlength="5"
+                maxlength="120"
+              >
+              <div class="form-text text-muted text-xs">Between 5 and 120 characters.</div>
+              <div class="field-error-text text-danger text-xs mt-1 d-none" id="error_title"></div>
+            </div>
+
+            <!-- Department -->
+            <div class="form-group">
+              <label for="complaint-department" class="form-label">
+                Concerned Municipal Department <span class="text-danger">*</span>
+              </label>
+              <select id="complaint-department" name="department" class="form-control" required>
+                <option value="">-- Select Department --</option>
+                <!-- Populated dynamically via complaints.js -->
+              </select>
+              <div class="field-error-text text-danger text-xs mt-1 d-none" id="error_department"></div>
+            </div>
+
+            <!-- Detailed Description -->
+            <div class="form-group">
+              <label for="complaint-description" class="form-label">
+                Detailed Description <span class="text-danger">*</span>
+              </label>
+              <textarea 
+                id="complaint-description" 
+                name="description" 
+                class="form-control" 
+                rows="4" 
+                placeholder="Describe the exact nature of the problem, severity, how long it has persisted, and any safety hazards..."
+                required
+                minlength="15"
+                maxlength="2000"
+              ></textarea>
+              <div class="flex-between mt-1">
+                <span class="text-xs text-muted">Minimum 15 characters. Please be descriptive.</span>
+                <span class="text-xs text-muted" id="desc-char-counter">0 / 2000</span>
+              </div>
+              <div class="field-error-text text-danger text-xs mt-1 d-none" id="error_description"></div>
+            </div>
+
+            <div class="form-section-header mt-6">
+              <h3>2. Location &amp; Geotagging</h3>
+              <p class="text-muted text-xs">Pinpoint the location where civic attention is required.</p>
+            </div>
+
+            <!-- Location Address -->
+            <div class="form-group">
+              <label for="complaint-location" class="form-label">
+                Street Address / Landmark <span class="text-danger">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="complaint-location" 
+                name="location" 
+                class="form-control" 
+                placeholder="e.g. Opposite Community Hall, Ward 14, Main Market Road"
+                required
+                minlength="5"
+                maxlength="300"
+              >
+              <div class="field-error-text text-danger text-xs mt-1 d-none" id="error_location"></div>
+            </div>
+
+            <!-- Geolocation Button & Coordinates Display -->
+            <div class="form-group">
+              <div class="geo-action-box">
+                <button type="button" class="btn btn-sm btn-outline" id="btn-detect-geo">
+                  📍 Detect My Current GPS Coordinates
+                </button>
+                <div id="geo-status-indicator" class="text-xs text-muted mt-2 d-none">
+                  <span id="geo-status-text">Detecting GPS location...</span>
+                </div>
+                <div id="geo-coordinates-pill" class="geo-coordinates-pill d-none mt-2">
+                  <span>GPS Lat: <strong id="geo-lat-display">-</strong>, Lng: <strong id="geo-lng-display">-</strong></span>
+                  <button type="button" class="btn-clear-geo" id="btn-clear-geo" title="Clear detected coordinates">×</button>
+                </div>
+              </div>
+              <!-- Hidden coordinate inputs -->
+              <input type="hidden" id="geo-latitude" name="latitude" value="">
+              <input type="hidden" id="geo-longitude" name="longitude" value="">
+            </div>
+
+            <div class="form-section-header mt-6">
+              <h3>3. Photographic Evidence (Optional)</h3>
+              <p class="text-muted text-xs">Attach clear photos of the issue. Strictly images only: JPG, JPEG, PNG (Max 5 MB each).</p>
+            </div>
+
+            <!-- Image Dropzone -->
+            <div class="form-group">
+              <div class="file-dropzone" id="image-dropzone">
+                <div class="dropzone-content">
+                  <div class="dropzone-icon">📷</div>
+                  <p class="dropzone-text">Click or drag &amp; drop photos here</p>
+                  <p class="text-xs text-muted">Strictly checked: Image binary signatures (JPG, PNG). Maximum 5 MB per photo.</p>
+                </div>
+                <input 
+                  type="file" 
+                  id="image-files-input" 
+                  name="images" 
+                  multiple 
+                  accept=".jpg, .jpeg, .png, image/jpeg, image/png"
+                  class="file-input-hidden"
+                >
+              </div>
+              <div id="selected-images-list" class="selected-files-list mt-3"></div>
+            </div>
+
+            <!-- Declaration -->
+            <div class="form-group mt-6">
+              <label class="checkbox-label">
+                <input type="checkbox" id="complaint-declaration" required>
+                <span class="text-sm">
+                  I certify that this complaint represents a genuine civic defect within municipal limits. I understand that submitting malicious or vexatious reports is subject to account suspension.
+                </span>
+              </label>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="complaint-alert" class="alert d-none mb-4" role="alert"></div>
+
+            <!-- Actions -->
+            <div class="form-actions mt-6">
+              <a href="index.html" class="btn btn-outline">Cancel</a>
+              <button type="submit" class="btn btn-primary" id="btn-submit-complaint">
+                <span class="btn-text">Register Grievance</span>
+                <span class="spinner-sm d-none" id="submit-spinner"></span>
+              </button>
+            </div>
+
+          </form>
+        </div>
+
+      </div>
+
+      <!-- Success Confirmation Card -->
+      <div id="complaint-success-card" class="card card-success-confirmation d-none text-center py-8">
+        <div class="success-icon-large">✓</div>
+        <h2>Grievance Registered Successfully!</h2>
+        <p class="text-muted mb-4">Your complaint has been logged in the civic grievance registry and routed to the concerned department.</p>
+
+        <div class="success-details-card mb-6">
+          <div class="detail-row">
+            <span class="text-muted">Grievance Tracking ID:</span>
+            <strong class="text-primary text-xl font-mono" id="success-complaint-id">MSP-CMP-2026-XXXXXXXX</strong>
+          </div>
+          <div class="detail-row">
+            <span class="text-muted">Subject:</span>
+            <span class="font-bold" id="success-complaint-title">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="text-muted">Routed Department:</span>
+            <span class="badge badge-info" id="success-complaint-dept">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="text-muted">Initial Status:</span>
+            <span class="badge badge-warning">Submitted (Pending Review)</span>
+          </div>
+        </div>
+
+        <div class="btn-group justify-center">
+          <a href="user-dashboard.html" class="btn btn-primary">Go to Citizen Dashboard</a>
+          <a href="submit-complaint.html" class="btn btn-outline" id="btn-lodge-another">Lodge Another Grievance</a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container footer-bottom">
+      <p>&copy; <span id="footer-year">2026</span> <span class="dynamic-portal-name">Municipal Service Portal</span>. All rights reserved.</p>
+      <p class="footer-note">Clean Architecture &amp; Database Backed Civic Information System.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="js/complaint.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+# Byte-compiled files
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Upload directory (only keep placeholder)
+uploads/*
+!uploads/.gitkeep
+
+# Testing cache
+.pytest_cache/
+.coverage
+htmlcov/

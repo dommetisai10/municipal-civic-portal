@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Municipal Service Portal</title>
+  <meta name="description" content="Municipal Service Portal Administration Dashboard. Review citizen applications, grievances, and manage services catalog.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dashboard-page admin-body">
+  <!-- Accessibility Skip Link -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Top System Status Bar -->
+  <div class="top-notice-bar admin-notice-bar" role="region" aria-label="Administrative System Notice">
+    <div class="container">
+      <div>
+        <span>🔒 Official Municipal Administration Portal — Strict Clean Data Architecture</span>
+      </div>
+      <div class="db-status-pill" id="db-connection-badge">
+        <span class="status-dot" id="db-status-dot"></span>
+        <span id="db-status-text">Checking database...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header & Navigation -->
+  <header class="site-header admin-header">
+    <div class="container nav-container">
+      <a href="admin-dashboard.html" class="brand-link">
+        <div class="brand-icon admin-brand-icon">MSP</div>
+        <div class="brand-text">
+          <span class="brand-name">Admin Portal</span>
+          <span class="brand-tagline">Municipal Control Center</span>
+        </div>
+      </a>
+
+      <nav class="admin-top-nav">
+        <a href="admin-dashboard.html" class="nav-link active">Overview</a>
+        <a href="admin-applications.html" class="nav-link">Applications</a>
+        <a href="admin-complaints.html" class="nav-link">Grievances</a>
+        <a href="admin-audit-logs.html" class="nav-link">Audit Logs</a>
+      </nav>
+
+      <div class="admin-user-nav">
+        <div class="admin-profile-pill">
+          <span class="admin-role-badge">Admin</span>
+          <span class="admin-email-text" id="admin-user-display">Loading officer...</span>
+        </div>
+        <button class="btn btn-sm btn-outline btn-admin-logout" id="btn-admin-logout">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main-content" class="py-6">
+    <div class="container">
+      
+      <!-- Dashboard Top Banner -->
+      <div class="dashboard-banner mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-neutral-900">Municipal Operations Dashboard</h1>
+          <p class="text-muted text-sm mt-1">Live administrative metrics, grievance routing, and civic service availability.</p>
+        </div>
+        <div class="clean-data-tag">
+          <span>● Live Database Aggregations (0 Mock Records)</span>
+        </div>
+      </div>
+
+      <!-- Alert Box -->
+      <div id="admin-alert" class="alert d-none mb-4" role="alert"></div>
+
+      <!-- Live Aggregation Metrics Grid -->
+      <div class="metrics-grid mb-8">
+        
+        <!-- Total Applications Card -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Total Applications</span>
+            <span class="metric-icon">📑</span>
+          </div>
+          <div class="metric-value font-bold" id="stat-total-apps">0</div>
+          <div class="metric-footer text-muted text-xs">
+            <span class="text-primary font-bold" id="stat-submitted-apps">0</span> Pending Review
+          </div>
+        </div>
+
+        <!-- Under Review Card -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Under Review</span>
+            <span class="metric-icon">⏳</span>
+          </div>
+          <div class="metric-value font-bold text-warning" id="stat-review-apps">0</div>
+          <div class="metric-footer text-muted text-xs">
+            Applications in active evaluation
+          </div>
+        </div>
+
+        <!-- Approved Card -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Approved</span>
+            <span class="metric-icon">✅</span>
+          </div>
+          <div class="metric-value font-bold text-success" id="stat-approved-apps">0</div>
+          <div class="metric-footer text-muted text-xs">
+            Physical verification issued
+          </div>
+        </div>
+
+        <!-- Total Complaints Card -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Total Grievances</span>
+            <span class="metric-icon">🛠️</span>
+          </div>
+          <div class="metric-value font-bold" id="stat-total-cmps">0</div>
+          <div class="metric-footer text-muted text-xs">
+            <span class="text-danger font-bold" id="stat-open-cmps">0</span> Open / In Progress
+          </div>
+        </div>
+
+        <!-- Citizens Count Card -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Registered Citizens</span>
+            <span class="metric-icon">👥</span>
+          </div>
+          <div class="metric-value font-bold" id="stat-citizens-count">0</div>
+          <div class="metric-footer text-muted text-xs">
+            Verified resident accounts
+          </div>
+        </div>
+
+        <!-- Services Count Card -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Catalog Services</span>
+            <span class="metric-icon">🏛️</span>
+          </div>
+          <div class="metric-value font-bold" id="stat-services-count">0</div>
+          <div class="metric-footer text-muted text-xs">
+            <span class="text-success font-bold" id="stat-active-services-count">0</span> Active for submission
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="admin-tabs-nav mb-6" role="tablist">
+        <button class="admin-tab-btn active" id="tab-btn-services" role="tab" aria-selected="true" aria-controls="tab-content-services">
+          🏛️ Services Catalog Management
+        </button>
+        <button class="admin-tab-btn" id="tab-btn-apps" role="tab" aria-selected="false" aria-controls="tab-content-apps">
+          📑 Recent Applications
+        </button>
+        <button class="admin-tab-btn" id="tab-btn-cmps" role="tab" aria-selected="false" aria-controls="tab-content-cmps">
+          🛠️ Recent Grievances
+        </button>
+      </div>
+
+      <!-- Tab 1: Services Catalog Management -->
+      <section class="admin-tab-panel" id="tab-content-services" role="tabpanel" aria-labelledby="tab-btn-services">
+        <div class="card">
+          <div class="card-header-flex mb-4">
+            <div>
+              <h2 class="text-lg font-bold">Municipal Services Catalog &amp; Availability</h2>
+              <p class="text-muted text-xs">Toggle services between Active (accepting applications) and Unavailable.</p>
+            </div>
+            <div class="text-xs text-muted">
+              12 Services Configured
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table" id="services-management-table">
+              <thead>
+                <tr>
+                  <th>Service Name</th>
+                  <th>Category</th>
+                  <th>Applications Count</th>
+                  <th>Current Status</th>
+                  <th>Availability Action</th>
+                </tr>
+              </thead>
+              <tbody id="services-tbody">
+                <tr>
+                  <td colspan="5" class="text-center py-6">
+                    <div class="spinner"></div>
+                    <p class="text-muted text-xs mt-2">Loading municipal services catalog...</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 2: Recent Applications -->
+      <section class="admin-tab-panel d-none" id="tab-content-apps" role="tabpanel" aria-labelledby="tab-btn-apps">
+        <div class="card">
+          <div class="card-header-flex mb-4">
+            <div>
+              <h2 class="text-lg font-bold">Latest Incoming Applications</h2>
+              <p class="text-muted text-xs">Recent submissions from citizens across all municipal services.</p>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Application ID</th>
+                  <th>Service</th>
+                  <th>Citizen Name</th>
+                  <th>Status</th>
+                  <th>Submitted At</th>
+                  <th>Track</th>
+                </tr>
+              </thead>
+              <tbody id="recent-apps-tbody">
+                <tr>
+                  <td colspan="6" class="text-center py-6 text-muted">Loading recent applications...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 3: Recent Grievances -->
+      <section class="admin-tab-panel d-none" id="tab-content-cmps" role="tabpanel" aria-labelledby="tab-btn-cmps">
+        <div class="card">
+          <div class="card-header-flex mb-4">
+            <div>
+              <h2 class="text-lg font-bold">Latest Citizen Grievances</h2>
+              <p class="text-muted text-xs">Recent civic defect reports routed by department.</p>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Complaint ID</th>
+                  <th>Department</th>
+                  <th>Title</th>
+                  <th>Citizen Name</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                  <th>Submitted At</th>
+                </tr>
+              </thead>
+              <tbody id="recent-cmps-tbody">
+                <tr>
+                  <td colspan="7" class="text-center py-6 text-muted">Loading recent grievances...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer admin-footer">
+    <div class="container footer-bottom">
+      <p>&copy; <span id="footer-year">2026</span> Municipal Service Portal — Administration Console.</p>
+      <p class="footer-note">Clean Architecture &amp; Database Backed Civic Control System.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="js/admin-dashboard.js"></script>
+</body>
+</html>

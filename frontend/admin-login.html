@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal Sign In | Municipal Service Portal</title>
+  <meta name="description" content="Municipal Service Portal Administrator Login. Restricted to authorized municipal personnel only.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-page">
+  <!-- Accessibility Skip Link -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Top System Status Bar -->
+  <div class="top-notice-bar admin-notice-bar" role="region" aria-label="Administrative System Notice">
+    <div class="container">
+      <div>
+        <span>🔒 Official Municipal Administration Portal — Authorized Access Only</span>
+      </div>
+      <div class="db-status-pill" id="db-connection-badge">
+        <span class="status-dot" id="db-status-dot"></span>
+        <span id="db-status-text">Checking database...</span>
+      </div>
+    </div>
+  </div>
+
+  <main id="main-content" class="auth-main">
+    <div class="auth-card admin-auth-card">
+      
+      <!-- Brand & Admin Icon -->
+      <div class="auth-header">
+        <a href="index.html" class="brand-link justify-center mb-3">
+          <div class="brand-icon admin-brand-icon">MSP</div>
+          <div class="brand-text">
+            <span class="brand-name">Municipal Portal</span>
+            <span class="brand-tagline">Official Civic System</span>
+          </div>
+        </a>
+        <div class="admin-badge-pill">Municipal Administration</div>
+        <h1 class="auth-title mt-2">Administrator Sign In</h1>
+        <p class="auth-subtitle">Restricted to authorized municipal officers and department supervisors.</p>
+      </div>
+
+      <!-- Alert Box -->
+      <div id="admin-login-alert" class="alert d-none mb-4" role="alert"></div>
+
+      <!-- Admin Login Form -->
+      <form id="admin-login-form" novalidate>
+        <div class="form-group">
+          <label for="admin-email" class="form-label font-bold">
+            Administrator Email <span class="text-danger">*</span>
+          </label>
+          <input 
+            type="email" 
+            id="admin-email" 
+            name="email" 
+            class="form-control" 
+            placeholder="admin@civic.local or officer@domain.gov" 
+            required 
+            autocomplete="email"
+          >
+          <div class="field-error-text text-danger text-xs mt-1 d-none" id="error_admin_email"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="admin-password" class="form-label font-bold">
+            Password <span class="text-danger">*</span>
+          </label>
+          <input 
+            type="password" 
+            id="admin-password" 
+            name="password" 
+            class="form-control" 
+            placeholder="Enter secure admin password" 
+            required 
+            autocomplete="current-password"
+          >
+          <div class="field-error-text text-danger text-xs mt-1 d-none" id="error_admin_password"></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block mt-4" id="btn-admin-login">
+          <span class="btn-text">Authenticate as Administrator</span>
+          <span class="spinner-sm d-none" id="admin-login-spinner"></span>
+        </button>
+      </form>
+
+      <!-- Footer / Back to Public Portal -->
+      <div class="auth-footer mt-6 text-center">
+        <a href="login.html" class="text-xs text-muted">Citizen? Go to Citizen Sign In →</a>
+        <div class="clean-data-tag mt-3">
+          <span>● Clean Data Architecture: Zero Hardcoded Credentials</span>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script type="module" src="js/admin-auth.js"></script>
+</body>
+</html>

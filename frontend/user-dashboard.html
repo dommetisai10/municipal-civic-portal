@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Citizen Dashboard | Municipal Service Portal</title>
+  <meta name="description" content="Manage your civic service applications, lodge grievances, review real-time processing statuses, and view live municipal service records.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dashboard-body">
+  <!-- Accessibility Skip Navigation -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Dashboard Header -->
+  <header class="dashboard-header" role="banner">
+    <div class="dash-header-container">
+      <div class="dash-brand">
+        <a href="index.html" class="brand-link" aria-label="Portal Home">
+          <div class="brand-icon" aria-hidden="true">MSP</div>
+          <div class="brand-text">
+            <span class="brand-name dynamic-portal-name">Municipal Service Portal</span>
+            <span class="brand-tagline">Citizen Services Workspace</span>
+          </div>
+        </a>
+      </div>
+
+      <div class="dash-user-panel">
+        <div class="db-status-pill" id="db-connection-badge">
+          <span class="status-dot" id="db-status-dot"></span>
+          <span id="db-status-text">Database</span>
+        </div>
+
+        <button class="notif-badge-btn" id="notif-bell-btn" aria-label="Notifications" title="View Notifications">
+          🔔 <span class="badge-count" id="unread-notif-count">0</span>
+        </button>
+
+        <div class="user-greeting">
+          <span class="greeting-role">Citizen</span>
+          <span class="greeting-name" id="user-display-name">Loading...</span>
+        </div>
+
+        <button class="btn btn-sm btn-outline" id="dash-logout-btn">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Dashboard Body Layout -->
+  <div class="dashboard-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="dashboard-sidebar" aria-label="Dashboard Navigation">
+      <nav class="sidebar-nav">
+        <ul class="sidebar-links">
+          <li>
+            <a href="#overview" class="sidebar-link active" data-section="overview">
+              <span class="link-icon" aria-hidden="true">📊</span> Dashboard Overview
+            </a>
+          </li>
+          <li>
+            <a href="services.html" class="sidebar-link">
+              <span class="link-icon" aria-hidden="true">📑</span> Apply for Services
+            </a>
+          </li>
+          <li>
+            <a href="#applications" class="sidebar-link" data-section="applications">
+              <span class="link-icon" aria-hidden="true">📄</span> My Applications
+            </a>
+          </li>
+          <li>
+            <a href="submit-complaint.html" class="sidebar-link">
+              <span class="link-icon" aria-hidden="true">⚠️</span> Submit Complaint
+            </a>
+          </li>
+          <li>
+            <a href="#complaints" class="sidebar-link" data-section="complaints">
+              <span class="link-icon" aria-hidden="true">🛠️</span> My Complaints
+            </a>
+          </li>
+          <li>
+            <a href="track-status.html" class="sidebar-link">
+              <span class="link-icon" aria-hidden="true">🔍</span> Track Status
+            </a>
+          </li>
+          <li>
+            <a href="#notifications" class="sidebar-link" data-section="notifications">
+              <span class="link-icon" aria-hidden="true">🔔</span> Notifications
+              <span class="badge-pill" id="sidebar-notif-badge">0</span>
+            </a>
+          </li>
+          <li>
+            <a href="#profile" class="sidebar-link" data-section="profile">
+              <span class="link-icon" aria-hidden="true">👤</span> My Profile
+            </a>
+          </li>
+          <li>
+            <a href="#password" class="sidebar-link" data-section="password">
+              <span class="link-icon" aria-hidden="true">🔒</span> Change Password
+            </a>
+          </li>
+          <li class="sidebar-divider"></li>
+          <li>
+            <button class="sidebar-link btn-logout" id="sidebar-logout-btn">
+              <span class="link-icon" aria-hidden="true">🚪</span> Sign Out
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="dashboard-main" id="main-content">
+      <!-- Section 1: Overview & Statistics -->
+      <section id="section-overview" class="dash-section active-section">
+        <div class="dash-page-header">
+          <div>
+            <h1 class="dash-page-title">Citizen Workspace</h1>
+            <p class="dash-page-desc">Live overview of your service requests and grievance redressal tickets.</p>
+          </div>
+          <div class="dash-action-group">
+            <a href="services.html" class="btn btn-primary btn-sm">+ New Application</a>
+            <a href="submit-complaint.html" class="btn btn-secondary btn-sm">+ Report Grievance</a>
+          </div>
+        </div>
+
+        <!-- 6 Live Statistics Cards (Strict live queries; 0 on empty DB) -->
+        <div class="stats-cards-grid" aria-label="Citizen Statistics">
+          <article class="stat-card">
+            <div class="stat-icon-wrapper blue">📄</div>
+            <div class="stat-content">
+              <div class="stat-value" id="stat-total-apps">0</div>
+              <div class="stat-label">Total Applications</div>
+            </div>
+          </article>
+
+          <article class="stat-card">
+            <div class="stat-icon-wrapper amber">⏳</div>
+            <div class="stat-content">
+              <div class="stat-value" id="stat-pending-apps">0</div>
+              <div class="stat-label">Pending Applications</div>
+            </div>
+          </article>
+
+          <article class="stat-card">
+            <div class="stat-icon-wrapper green">✅</div>
+            <div class="stat-content">
+              <div class="stat-value" id="stat-approved-apps">0</div>
+              <div class="stat-label">Approved Applications</div>
+            </div>
+          </article>
+
+          <article class="stat-card">
+            <div class="stat-icon-wrapper red">❌</div>
+            <div class="stat-content">
+              <div class="stat-value" id="stat-rejected-apps">0</div>
+              <div class="stat-label">Rejected Applications</div>
+            </div>
+          </article>
+
+          <article class="stat-card">
+            <div class="stat-icon-wrapper cyan">🛠️</div>
+            <div class="stat-content">
+              <div class="stat-value" id="stat-total-cmps">0</div>
+              <div class="stat-label">Total Complaints</div>
+            </div>
+          </article>
+
+          <article class="stat-card">
+            <div class="stat-icon-wrapper purple">🏁</div>
+            <div class="stat-content">
+              <div class="stat-value" id="stat-resolved-cmps">0</div>
+              <div class="stat-label">Resolved Complaints</div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Recent Records Split Grid -->
+        <div class="dash-tables-split">
+          <!-- Recent Applications Table -->
+          <div class="dash-table-card">
+            <div class="table-card-header">
+              <h2 class="table-card-title">Recent Applications</h2>
+              <a href="#applications" class="link-action view-all-btn" data-target="applications">View All</a>
+            </div>
+            <div id="recent-apps-container" class="table-responsive">
+              <!-- Populated dynamically or shows empty state -->
+            </div>
+          </div>
+
+          <!-- Recent Complaints Table -->
+          <div class="dash-table-card">
+            <div class="table-card-header">
+              <h2 class="table-card-title">Recent Complaints</h2>
+              <a href="#complaints" class="link-action view-all-btn" data-target="complaints">View All</a>
+            </div>
+            <div id="recent-cmps-container" class="table-responsive">
+              <!-- Populated dynamically or shows empty state -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: All Applications -->
+      <section id="section-applications" class="dash-section" style="display: none;">
+        <div class="dash-page-header">
+          <div>
+            <h2 class="dash-page-title">My Service Applications</h2>
+            <p class="dash-page-desc">Complete record of your submitted municipal applications.</p>
+          </div>
+          <a href="services.html" class="btn btn-primary btn-sm">+ Apply for Service</a>
+        </div>
+        <div class="dash-table-card">
+          <div id="all-apps-container" class="table-responsive">
+            <!-- Rendered by dashboard.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: All Complaints -->
+      <section id="section-complaints" class="dash-section" style="display: none;">
+        <div class="dash-page-header">
+          <div>
+            <h2 class="dash-page-title">My Grievances &amp; Complaints</h2>
+            <p class="dash-page-desc">Track status and field resolutions of your civic issues.</p>
+          </div>
+          <a href="submit-complaint.html" class="btn btn-primary btn-sm">+ Lodge Complaint</a>
+        </div>
+        <div class="dash-table-card">
+          <div id="all-cmps-container" class="table-responsive">
+            <!-- Rendered by dashboard.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 4: Notifications -->
+      <section id="section-notifications" class="dash-section" style="display: none;">
+        <div class="dash-page-header">
+          <div>
+            <h2 class="dash-page-title">Citizen Notifications</h2>
+            <p class="dash-page-desc">System alerts, status changes, and municipal announcements.</p>
+          </div>
+        </div>
+        <div class="dash-table-card">
+          <div id="notifications-list-container">
+            <!-- Rendered by dashboard.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 5: My Profile -->
+      <section id="section-profile" class="dash-section" style="display: none;">
+        <div class="dash-page-header">
+          <div>
+            <h2 class="dash-page-title">Citizen Profile</h2>
+            <p class="dash-page-desc">Your registered personal and residential details.</p>
+          </div>
+        </div>
+        <div class="profile-card">
+          <form id="profile-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="prof-fullname" class="form-label">Full Name</label>
+                <input type="text" id="prof-fullname" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label for="prof-email" class="form-label">Email (Immutable)</label>
+                <input type="email" id="prof-email" class="form-control" disabled>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="prof-mobile" class="form-label">Mobile Number</label>
+                <input type="tel" id="prof-mobile" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label for="prof-role" class="form-label">Role</label>
+                <input type="text" id="prof-role" class="form-control" value="Citizen" disabled>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="prof-address" class="form-label">Residential Address</label>
+              <textarea id="prof-address" class="form-control" rows="3" required></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="save-profile-btn">Update Profile</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Section 6: Change Password -->
+      <section id="section-password" class="dash-section" style="display: none;">
+        <div class="dash-page-header">
+          <div>
+            <h2 class="dash-page-title">Security &amp; Password</h2>
+            <p class="dash-page-desc">Update your account password with cryptographic security.</p>
+          </div>
+        </div>
+        <div class="profile-card">
+          <form id="password-change-form">
+            <div class="form-group">
+              <label for="pwd-current" class="form-label">Current Password</label>
+              <input type="password" id="pwd-current" class="form-control" required autocomplete="current-password">
+            </div>
+
+            <div class="form-group">
+              <label for="pwd-new" class="form-label">New Password</label>
+              <input type="password" id="pwd-new" class="form-control" required autocomplete="new-password">
+              <div class="field-hint">Minimum 8 characters with uppercase, lowercase, and digit.</div>
+            </div>
+
+            <div class="form-group">
+              <label for="pwd-confirm" class="form-label">Confirm New Password</label>
+              <input type="password" id="pwd-confirm" class="form-control" required autocomplete="new-password">
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="save-password-btn">Update Password</button>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

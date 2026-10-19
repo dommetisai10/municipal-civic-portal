@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Municipal Service Portal | Civic Services & Grievance Redressal</title>
+  <meta name="description" content="Municipal Service Portal for citizen service applications, grievance redressal, and real-time public status tracking. Clean data architecture with verified database backing.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Accessibility Skip Navigation -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Top System Status Bar -->
+  <div class="top-notice-bar" role="region" aria-label="System Notice and Status">
+    <div class="container">
+      <div>
+        <span>Demonstration Civic Portal — Clean Data Architecture</span>
+      </div>
+      <div class="db-status-pill" id="db-connection-badge" title="Live MongoDB connectivity status">
+        <span class="status-dot" id="db-status-dot"></span>
+        <span id="db-status-text">Checking database...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header & Navigation -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-link" id="brand-home-link" aria-label="Municipal Service Portal Home">
+        <div class="brand-icon" aria-hidden="true">MSP</div>
+        <div class="brand-text">
+          <span class="brand-name dynamic-portal-name">Municipal Service Portal</span>
+          <span class="brand-tagline">Citizen Services &amp; Grievances</span>
+        </div>
+      </a>
+
+      <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="main-nav">
+        ☰
+      </button>
+
+      <nav class="main-nav" id="main-nav" aria-label="Main Navigation">
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link active" id="nav-link-home">Home</a></li>
+          <li><a href="services.html" class="nav-link" id="nav-link-services">Services</a></li>
+          <li><a href="submit-complaint.html" class="nav-link" id="nav-link-complaint">Submit Complaint</a></li>
+          <li><a href="track-status.html" class="nav-link" id="nav-link-track">Track Status</a></li>
+          <li><a href="#contact-section" class="nav-link" id="nav-link-contact">Contact</a></li>
+        </ul>
+
+        <div class="nav-actions" id="nav-auth-actions">
+          <!-- Populated dynamically by home.js based on session state -->
+          <a href="login.html" class="btn btn-sm btn-outline" id="nav-login-btn">Sign In</a>
+          <a href="register.html" class="btn btn-sm btn-primary" id="nav-register-btn">Register</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main-content">
+    <!-- Hero Section -->
+    <section class="hero-section" id="hero-section" aria-labelledby="hero-heading">
+      <div class="container">
+        <div class="hero-content">
+          <div class="hero-badge">
+            <span aria-hidden="true">🏛️</span> Citizen-Centric Municipal Services
+          </div>
+          <h1 class="hero-title" id="hero-heading">Civic Services &amp; Grievance Redressal, Simplified</h1>
+          <p class="hero-subtitle">
+            Apply online for municipal certificates and permits, file civic complaints with live photographic evidence, and track processing transparency in real-time.
+          </p>
+          <div class="hero-cta-group">
+            <a href="services.html" class="btn btn-primary btn-lg" id="hero-apply-btn">Apply for a Service</a>
+            <a href="submit-complaint.html" class="btn btn-secondary btn-lg" id="hero-complaint-btn">Lodge a Complaint</a>
+            <a href="track-status.html" class="btn btn-outline btn-lg" id="hero-track-btn">Track Status</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Action Cards Strip -->
+    <section class="quick-action-strip" id="quick-action-strip" aria-label="Quick Actions">
+      <div class="container">
+        <div class="action-cards-grid">
+          <!-- Card 1 -->
+          <article class="action-card" id="card-apply-service">
+            <div class="action-card-icon blue" aria-hidden="true">📄</div>
+            <h2 class="action-card-title">Apply for Services</h2>
+            <p class="action-card-desc">
+              Birth and death certificates, property tax requests, trade licenses, building permissions, and water connections.
+            </p>
+            <a href="services.html" class="btn btn-sm btn-secondary" id="action-browse-services-btn">Browse Catalog &rarr;</a>
+          </article>
+
+          <!-- Card 2 -->
+          <article class="action-card" id="card-lodge-complaint">
+            <div class="action-card-icon amber" aria-hidden="true">⚠️</div>
+            <h2 class="action-card-title">Lodge a Complaint</h2>
+            <p class="action-card-desc">
+              Report civic grievances such as potholes, garbage, street light repairs, or water supply issues directly to municipal departments.
+            </p>
+            <a href="submit-complaint.html" class="btn btn-sm btn-secondary" id="action-lodge-complaint-btn">File Grievance &rarr;</a>
+          </article>
+
+          <!-- Card 3 -->
+          <article class="action-card" id="card-track-status">
+            <div class="action-card-icon cyan" aria-hidden="true">🔍</div>
+            <h2 class="action-card-title">Track Application</h2>
+            <p class="action-card-desc">
+              Check real-time processing status of your submitted application or complaint using your unique reference ID.
+            </p>
+            <a href="track-status.html" class="btn btn-sm btn-secondary" id="action-track-status-btn">Track Now &rarr;</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="section" id="how-it-works-section" aria-labelledby="how-it-works-heading">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">Simple &amp; Transparent</span>
+          <h2 class="section-title" id="how-it-works-heading">How the Portal Works</h2>
+          <p class="section-subtitle">A simple 3-step digital process designed for citizen accessibility and accountability.</p>
+        </div>
+
+        <div class="steps-grid">
+          <div class="step-card" id="step-card-1">
+            <div class="step-number" aria-hidden="true">1</div>
+            <h3 class="step-title">Choose Service or Complaint</h3>
+            <p class="step-desc">
+              Select the required service category, complete the structured application form, or describe your grievance with location details.
+            </p>
+          </div>
+
+          <div class="step-card" id="step-card-2">
+            <div class="step-number" aria-hidden="true">2</div>
+            <h3 class="step-title">Receive Secure Reference ID</h3>
+            <p class="step-desc">
+              Upon successful submission and database acknowledgment, receive a unique identifier (e.g., <code>MSP-APP-2026-XXXX</code> or <code>MSP-CMP-2026-XXXX</code>).
+            </p>
+          </div>
+
+          <div class="step-card" id="step-card-3">
+            <div class="step-number" aria-hidden="true">3</div>
+            <h3 class="step-title">Track Review &amp; Resolution</h3>
+            <p class="step-desc">
+              Municipal officers review documents, assign grievances to field departments, and log resolution remarks with full timestamped audit trails.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dynamic Services Catalog Section -->
+    <section class="section" id="services-section" aria-labelledby="services-catalog-heading" style="background-color: var(--white);">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">Municipal Catalog</span>
+          <h2 class="section-title" id="services-catalog-heading">Available Civic Services</h2>
+          <p class="section-subtitle">Real-time listing of active municipal services backed by live database configuration.</p>
+        </div>
+
+        <!-- Rendered dynamically by home.js from GET /api/services -->
+        <div id="services-grid-container" aria-live="polite">
+          <div class="empty-state-box">
+            <div class="empty-state-icon">⏳</div>
+            <h3 class="empty-state-title">Loading Municipal Services...</h3>
+            <p class="empty-state-text">Fetching current services catalog from the database.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact & Helpdesk Information Section -->
+    <section class="section" id="contact-section" aria-labelledby="contact-heading">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">Support &amp; Assistance</span>
+          <h2 class="section-title" id="contact-heading">Municipal Contact Information</h2>
+          <p class="section-subtitle">Direct municipal contact points driven by official system configuration.</p>
+        </div>
+
+        <div class="contact-grid">
+          <div class="contact-card" id="contact-card-phone">
+            <div class="contact-icon" aria-hidden="true">📞</div>
+            <div>
+              <div class="contact-info-title">Citizen Helpdesk</div>
+              <div class="contact-info-value" id="contact-phone-val">[Contact phone – to be configured]</div>
+            </div>
+          </div>
+
+          <div class="contact-card" id="contact-card-email">
+            <div class="contact-icon" aria-hidden="true">✉️</div>
+            <div>
+              <div class="contact-info-title">Inquiries &amp; Support</div>
+              <div class="contact-info-value" id="contact-email-val">[Contact email – to be configured]</div>
+            </div>
+          </div>
+
+          <div class="contact-card" id="contact-card-address">
+            <div class="contact-icon" aria-hidden="true">🏢</div>
+            <div>
+              <div class="contact-info-title">Municipal Office</div>
+              <div class="contact-info-value" id="contact-address-val">[Office address – to be configured]</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand-title dynamic-portal-name">Municipal Service Portal</div>
+          <p class="footer-desc">
+            An open civic service management portal empowering citizens to interact with municipal administrative workflows with transparent tracking and zero fabricated data.
+          </p>
+        </div>
+
+        <div>
+          <div class="footer-col-title">Quick Links</div>
+          <ul class="footer-links">
+            <li><a href="services.html">Services Catalog</a></li>
+            <li><a href="submit-complaint.html">Submit Complaint</a></li>
+            <li><a href="track-status.html">Track Status</a></li>
+            <li><a href="register.html">Citizen Registration</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="footer-col-title">Administration</div>
+          <ul class="footer-links">
+            <li><a href="admin-login.html" id="footer-admin-link">Administrator Portal</a></li>
+            <li><a href="/api/health" target="_blank" rel="noopener">System Health API</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>
+          &copy; <span id="current-year">2026</span> <span class="dynamic-portal-name">Municipal Service Portal</span>. All rights reserved.
+        </div>
+        <div>
+          <span>Demonstration portal — Clean data architecture</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- JavaScript ES Module -->
+  <script type="module" src="js/home.js"></script>
+</body>
+</html>

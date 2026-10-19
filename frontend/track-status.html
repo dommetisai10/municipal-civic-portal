@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Public Status Tracking | Municipal Service Portal</title>
+  <meta name="description" content="Track the live processing status of municipal service applications and civic complaints with real-time database verification.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Accessibility Skip Link -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Top System Status Bar -->
+  <div class="top-notice-bar" role="region" aria-label="System Notice and Status">
+    <div class="container">
+      <div>
+        <span>Demonstration Civic Portal — Clean Data Architecture</span>
+      </div>
+      <div class="db-status-pill" id="db-connection-badge" title="Live MongoDB connectivity status">
+        <span class="status-dot" id="db-status-dot"></span>
+        <span id="db-status-text">Checking database...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header & Navigation -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-link" id="brand-home-link" aria-label="Municipal Service Portal Home">
+        <div class="brand-icon" aria-hidden="true">MSP</div>
+        <div class="brand-text">
+          <span class="brand-name dynamic-portal-name">Municipal Service Portal</span>
+          <span class="brand-tagline">Citizen Services &amp; Grievances</span>
+        </div>
+      </a>
+
+      <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="main-nav">
+        ☰
+      </button>
+
+      <nav class="main-nav" id="main-nav" aria-label="Main Navigation">
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link" id="nav-link-home">Home</a></li>
+          <li><a href="services.html" class="nav-link" id="nav-link-services">Services</a></li>
+          <li><a href="submit-complaint.html" class="nav-link" id="nav-link-complaint">Submit Complaint</a></li>
+          <li><a href="track-status.html" class="nav-link active" id="nav-link-track">Track Status</a></li>
+        </ul>
+
+        <div class="nav-actions" id="nav-auth-actions">
+          <a href="login.html" class="btn btn-sm btn-outline" id="nav-login-btn">Sign In</a>
+          <a href="register.html" class="btn btn-sm btn-primary" id="nav-register-btn">Register</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main-content" class="py-8">
+    <div class="container container-md">
+      
+      <!-- Page Header Strip -->
+      <section class="page-header-strip rounded-header-strip mb-6">
+        <div class="container">
+          <span class="badge badge-info">Public Civic Transparency</span>
+          <h1 class="text-2xl font-bold mt-2 mb-2 text-white">Track Application or Grievance Status</h1>
+          <p class="text-sm text-primary-100">
+            Real-time public status lookup. Enter your municipal reference ID to view the latest workflow stage, 
+            departmental progress, and milestone notes directly from the live database.
+          </p>
+        </div>
+      </section>
+
+      <!-- Tracking Search Box Card -->
+      <div class="card mb-6 track-search-card">
+        <form id="track-form" novalidate>
+          <div class="form-group mb-3">
+            <label for="tracking-id-input" class="form-label font-bold">
+              Enter Tracking Reference Number
+            </label>
+            <div class="track-input-group">
+              <span class="track-search-icon" aria-hidden="true">🔍</span>
+              <input 
+                type="text" 
+                id="tracking-id-input" 
+                name="id" 
+                class="form-control track-input" 
+                placeholder="e.g. MSP-APP-2026-XXXXXXXX or MSP-CMP-2026-XXXXXXXX"
+                required
+                autocomplete="off"
+                spellcheck="false"
+              >
+              <button type="submit" class="btn btn-primary" id="btn-track-submit">
+                <span class="btn-text">Track Status</span>
+                <span class="spinner-sm d-none" id="track-spinner"></span>
+              </button>
+            </div>
+            <div class="track-hint-row">
+              <span class="text-xs text-muted">Format: <code>MSP-APP-YYYY-XXXXXXXX</code> (Applications) or <code>MSP-CMP-YYYY-XXXXXXXX</code> (Complaints)</span>
+              <span class="text-xs text-primary font-bold">Strictly 0 PII Exposed</span>
+            </div>
+          </div>
+        </form>
+
+        <!-- Alert Container -->
+        <div id="track-alert" class="alert d-none mt-3" role="alert"></div>
+      </div>
+
+      <!-- Tracking Result Container (Hidden until search returns) -->
+      <div id="tracking-result-card" class="card tracking-result-card d-none">
+        
+        <!-- Header Row -->
+        <div class="track-header-row">
+          <div class="track-badges">
+            <span class="badge badge-category" id="track-type-badge">Application</span>
+            <span class="badge badge-info" id="track-dept-badge">Department</span>
+          </div>
+          <div>
+            <span class="status-badge" id="track-status-badge">Submitted</span>
+          </div>
+        </div>
+
+        <!-- Title & Reference ID -->
+        <h2 class="track-record-title" id="track-title">-</h2>
+        <div class="track-ref-line">
+          <span class="text-muted">Official Reference Number:</span>
+          <strong class="font-mono text-primary text-lg" id="track-record-id">MSP-APP-2026-XXXXXXXX</strong>
+        </div>
+
+        <!-- Metadata Grid -->
+        <div class="track-details-grid mt-4">
+          <div class="track-detail-item">
+            <span class="detail-label">Date Submitted</span>
+            <span class="detail-value" id="track-created-date">-</span>
+          </div>
+          <div class="track-detail-item">
+            <span class="detail-label">Last Updated</span>
+            <span class="detail-value" id="track-updated-date">-</span>
+          </div>
+          <div class="track-detail-item" id="track-location-container">
+            <span class="detail-label">Reported Location</span>
+            <span class="detail-value" id="track-location-val">-</span>
+          </div>
+          <div class="track-detail-item">
+            <span class="detail-label">Supporting Proofs</span>
+            <span class="detail-value" id="track-proofs-count">0 files verified</span>
+          </div>
+        </div>
+
+        <!-- Notice Banner (Certificate notice for applications) -->
+        <div class="track-notice-box mt-4" id="track-cert-notice">
+          <span class="notice-icon">ℹ️</span>
+          <span class="text-xs">
+            <strong>Certificate Policy:</strong> Online issuance is disabled (Issuance not supported). 
+            Final certificates require physical in-person inspection and verification by the designated municipal officer.
+          </span>
+        </div>
+
+        <!-- Visual Stage Stepper -->
+        <div class="track-stepper-container mt-6">
+          <h3 class="stepper-title">Workflow Progress</h3>
+          <div class="track-stepper" id="track-stepper">
+            <div class="stepper-step" id="step-submitted">
+              <div class="step-circle">1</div>
+              <div class="step-label">Submitted</div>
+            </div>
+            <div class="stepper-line" id="line-1"></div>
+            <div class="stepper-step" id="step-review">
+              <div class="step-circle">2</div>
+              <div class="step-label">Under Review</div>
+            </div>
+            <div class="stepper-line" id="line-2"></div>
+            <div class="stepper-step" id="step-outcome">
+              <div class="step-circle">3</div>
+              <div class="step-label" id="step-outcome-label">Resolution / Decision</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status History Milestones -->
+        <div class="track-history-section mt-6">
+          <h3 class="history-title">Milestone Timeline</h3>
+          <div class="timeline-container" id="track-timeline-list">
+            <!-- Dynamically populated via track.js -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container footer-bottom">
+      <p>&copy; <span id="footer-year">2026</span> <span class="dynamic-portal-name">Municipal Service Portal</span>. All rights reserved.</p>
+      <p class="footer-note">Clean Architecture &amp; Database Backed Civic Information System.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="js/track.js"></script>
+</body>
+</html>

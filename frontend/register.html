@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Citizen Registration | Municipal Service Portal</title>
+  <meta name="description" content="Register for a Municipal Service Portal citizen account to apply for civic services, lodge complaints, and access online municipal administrative processes.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-page">
+  <!-- Accessibility Skip Navigation -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Top System Status Bar -->
+  <div class="top-notice-bar" role="region" aria-label="System Notice and Status">
+    <div class="container">
+      <div>
+        <span>Demonstration Civic Portal — Clean Data Architecture</span>
+      </div>
+      <div class="db-status-pill" id="db-connection-badge">
+        <span class="status-dot" id="db-status-dot"></span>
+        <span id="db-status-text">Checking database...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-link" id="brand-home-link" aria-label="Municipal Service Portal Home">
+        <div class="brand-icon" aria-hidden="true">MSP</div>
+        <div class="brand-text">
+          <span class="brand-name dynamic-portal-name">Municipal Service Portal</span>
+          <span class="brand-tagline">Citizen Services &amp; Grievances</span>
+        </div>
+      </a>
+
+      <nav class="main-nav" id="main-nav">
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="services.html" class="nav-link">Services</a></li>
+          <li><a href="track-status.html" class="nav-link">Track Status</a></li>
+        </ul>
+        <div class="nav-actions">
+          <a href="login.html" class="btn btn-sm btn-outline">Sign In</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main-content" class="auth-main-container">
+    <div class="auth-card register-card" id="register-card">
+      <div class="auth-header">
+        <div class="auth-icon" aria-hidden="true">📝</div>
+        <h1 class="auth-title">Citizen Account Registration</h1>
+        <p class="auth-subtitle">Create your personal municipal account with real database verification.</p>
+      </div>
+
+      <div id="auth-alert" class="alert-box" style="display: none;" role="alert"></div>
+
+      <form id="register-form" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="reg-fullname" class="form-label">Full Legal Name <span class="required-star">*</span></label>
+            <input
+              type="text"
+              id="reg-fullname"
+              name="full_name"
+              class="form-control"
+              placeholder="e.g. John Doe"
+              required
+              autocomplete="name"
+            >
+            <div class="field-error" id="fullname-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="reg-email" class="form-label">Email Address <span class="required-star">*</span></label>
+            <input
+              type="email"
+              id="reg-email"
+              name="email"
+              class="form-control"
+              placeholder="e.g. john.doe@example.com"
+              required
+              autocomplete="email"
+            >
+            <div class="field-error" id="email-error"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="reg-mobile" class="form-label">Mobile Number <span class="required-star">*</span></label>
+            <input
+              type="tel"
+              id="reg-mobile"
+              name="mobile"
+              class="form-control"
+              placeholder="e.g. 9876543210 (10-15 digits)"
+              required
+              autocomplete="tel"
+            >
+            <div class="field-error" id="mobile-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="reg-address" class="form-label">Residential Address <span class="required-star">*</span></label>
+            <input
+              type="text"
+              id="reg-address"
+              name="address"
+              class="form-control"
+              placeholder="House/Plot No, Street, Ward, City"
+              required
+              autocomplete="street-address"
+            >
+            <div class="field-error" id="address-error"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="reg-password" class="form-label">Password <span class="required-star">*</span></label>
+            <input
+              type="password"
+              id="reg-password"
+              name="password"
+              class="form-control"
+              placeholder="Minimum 8 characters"
+              required
+              autocomplete="new-password"
+            >
+            <div class="field-hint">Must contain at least 8 characters with upper, lower, and digit.</div>
+            <div class="field-error" id="password-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="reg-confirm-password" class="form-label">Confirm Password <span class="required-star">*</span></label>
+            <input
+              type="password"
+              id="reg-confirm-password"
+              name="confirm_password"
+              class="form-control"
+              placeholder="Re-enter your password"
+              required
+              autocomplete="new-password"
+            >
+            <div class="field-error" id="confirm-password-error"></div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="register-submit-btn">
+          <span id="btn-text">Complete Registration</span>
+          <span id="btn-spinner" class="spinner" style="display: none;" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <p>Already registered? <a href="login.html" class="link-primary">Sign In to Your Account</a></p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-bottom">
+        <div>
+          &copy; <span id="current-year">2026</span> <span class="dynamic-portal-name">Municipal Service Portal</span>. All rights reserved.
+        </div>
+        <div>
+          <span>Demonstration portal — Zero fake records</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <script type="module" src="js/auth.js"></script>
+</body>
+</html>

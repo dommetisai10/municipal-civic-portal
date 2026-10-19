@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Municipal Services Directory | Municipal Service Portal</title>
+  <meta name="description" content="Browse available municipal citizen services, document requirements, and apply online through the official Municipal Service Portal.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Accessibility Skip Link -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Top System Status Bar -->
+  <div class="top-notice-bar" role="region" aria-label="System Notice and Status">
+    <div class="container">
+      <div>
+        <span>Demonstration Civic Portal — Clean Data Architecture</span>
+      </div>
+      <div class="db-status-pill" id="db-connection-badge" title="Live MongoDB connectivity status">
+        <span class="status-dot" id="db-status-dot"></span>
+        <span id="db-status-text">Checking database...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header & Navigation -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-link" id="brand-home-link" aria-label="Municipal Service Portal Home">
+        <div class="brand-icon" aria-hidden="true">MSP</div>
+        <div class="brand-text">
+          <span class="brand-name dynamic-portal-name">Municipal Service Portal</span>
+          <span class="brand-tagline">Citizen Services &amp; Grievances</span>
+        </div>
+      </a>
+
+      <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="main-nav">
+        ☰
+      </button>
+
+      <nav class="main-nav" id="main-nav" aria-label="Main Navigation">
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link" id="nav-link-home">Home</a></li>
+          <li><a href="services.html" class="nav-link active" id="nav-link-services">Services</a></li>
+          <li><a href="submit-complaint.html" class="nav-link" id="nav-link-complaint">Submit Complaint</a></li>
+          <li><a href="track-status.html" class="nav-link" id="nav-link-track">Track Status</a></li>
+        </ul>
+
+        <div class="nav-actions" id="nav-auth-actions">
+          <a href="login.html" class="btn btn-sm btn-outline" id="nav-login-btn">Sign In</a>
+          <a href="register.html" class="btn btn-sm btn-primary" id="nav-register-btn">Register</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main-content">
+    <!-- Hero / Header Strip -->
+    <section class="page-header-strip">
+      <div class="container">
+        <div class="page-header-content">
+          <span class="badge badge-info">Civic Services Directory</span>
+          <h1>Municipal Services &amp; Applications</h1>
+          <p class="subtitle">
+            Explore citizen services provided by your local administration. View eligibility guidelines, checklist of required documents, and submit applications online.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Services Catalog Section -->
+    <section class="section py-8">
+      <div class="container">
+        
+        <!-- Controls: Search & Category Filter -->
+        <div class="catalog-controls-card">
+          <div class="controls-row">
+            <div class="search-box-wrapper">
+              <span class="search-icon" aria-hidden="true">🔍</span>
+              <input 
+                type="search" 
+                id="service-search-input" 
+                class="form-control search-input" 
+                placeholder="Search services by keyword, category, or document..." 
+                aria-label="Search municipal services"
+              >
+            </div>
+            <div class="category-select-wrapper">
+              <label for="category-filter-select" class="sr-only">Filter by Department/Category</label>
+              <select id="category-filter-select" class="form-control">
+                <option value="ALL">All Categories</option>
+                <option value="Civil Registration">Civil Registration</option>
+                <option value="Revenue & Taxation">Revenue &amp; Taxation</option>
+                <option value="Commercial & Licensing">Commercial &amp; Licensing</option>
+                <option value="Public Works & Utilities">Public Works &amp; Utilities</option>
+                <option value="Sanitation & Environment">Sanitation &amp; Environment</option>
+                <option value="General Administration">General Administration</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Active Filter Pill Summary -->
+          <div class="catalog-summary-row">
+            <span class="text-muted text-sm" id="catalog-count-text">Loading services from database...</span>
+            <div class="clean-data-tag" title="Strict Clean Data Verification">
+              <span>● Live Database Records Only (0 Mock Records)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feedback Alert Container -->
+        <div id="catalog-alert" class="alert d-none" role="alert"></div>
+
+        <!-- Services Grid -->
+        <div class="services-grid" id="services-grid" aria-live="polite">
+          <!-- Dynamically populated by services.js -->
+          <div class="loading-state-card">
+            <div class="spinner"></div>
+            <p>Fetching official municipal services...</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container footer-bottom">
+      <p>&copy; <span id="footer-year">2026</span> <span class="dynamic-portal-name">Municipal Service Portal</span>. All rights reserved.</p>
+      <p class="footer-note">Clean Architecture &amp; Database Backed Civic Information System.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="js/services.js"></script>
+</body>
+</html>

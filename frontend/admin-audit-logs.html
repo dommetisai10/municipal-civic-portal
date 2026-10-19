@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Logs & Compliance | Municipal Admin Portal</title>
+  <meta name="description" content="Municipal Service Portal Administration - Inspect immutable audit trails, administrative mutations, and security events.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dashboard-page admin-body">
+  <!-- Accessibility Skip Link -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Top System Status Bar -->
+  <div class="top-notice-bar admin-notice-bar" role="region" aria-label="System Notice">
+    <div class="container">
+      <div>
+        <span>🔒 Official Municipal Administration Portal — Strict Clean Data Architecture</span>
+      </div>
+      <div class="db-status-pill" id="db-connection-badge">
+        <span class="status-dot" id="db-status-dot"></span>
+        <span id="db-status-text">Checking database...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header admin-header">
+    <div class="container nav-container">
+      <a href="admin-dashboard.html" class="brand-link">
+        <div class="brand-icon admin-brand-icon">MSP</div>
+        <div class="brand-text">
+          <span class="brand-name">Admin Portal</span>
+          <span class="brand-tagline">Audit & Compliance</span>
+        </div>
+      </a>
+
+      <nav class="admin-top-nav">
+        <a href="admin-dashboard.html" class="nav-link">Overview</a>
+        <a href="admin-applications.html" class="nav-link">Applications</a>
+        <a href="admin-complaints.html" class="nav-link">Grievances</a>
+        <a href="admin-audit-logs.html" class="nav-link active">Audit Logs</a>
+      </nav>
+
+      <div class="admin-user-nav">
+        <div class="admin-profile-pill">
+          <span class="admin-role-badge">Admin</span>
+          <span class="admin-email-text" id="admin-user-display">Loading officer...</span>
+        </div>
+        <button class="btn btn-sm btn-outline btn-admin-logout" id="btn-admin-logout">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main-content" class="py-6">
+    <div class="container">
+      
+      <!-- Banner -->
+      <div class="dashboard-banner mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-neutral-900">Security & Administrative Audit Trail</h1>
+          <p class="text-muted text-sm mt-1">Review immutable system event records, access activity, and workflow state transitions across the municipality.</p>
+        </div>
+        <div class="clean-data-tag">
+          <span>● Acknowledged Audit Log Records</span>
+        </div>
+      </div>
+
+      <!-- Filters Card -->
+      <div class="card mb-6">
+        <form id="audit-filter-form">
+          <div class="audit-filter-grid">
+            <div class="form-group">
+              <label for="filter-search" class="form-label text-xs">Search Keywords</label>
+              <input 
+                type="search" 
+                id="filter-search" 
+                class="form-control" 
+                placeholder="Action, Target ID, Actor ID, or IP..."
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="filter-action" class="form-label text-xs">Action Type</label>
+              <select id="filter-action" class="form-control">
+                <option value="ALL">All Actions</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="filter-role" class="form-label text-xs">Actor Role</label>
+              <select id="filter-role" class="form-control">
+                <option value="ALL">All Roles</option>
+                <option value="admin">Administrator</option>
+                <option value="citizen">Citizen</option>
+                <option value="system">System</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="filter-collection" class="form-label text-xs">Target Collection</label>
+              <select id="filter-collection" class="form-control">
+                <option value="ALL">All Collections</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="filter-start-date" class="form-label text-xs">From Date</label>
+              <input type="date" id="filter-start-date" class="form-control">
+            </div>
+
+            <div class="form-group">
+              <label for="filter-end-date" class="form-label text-xs">To Date</label>
+              <input type="date" id="filter-end-date" class="form-control">
+            </div>
+
+            <div class="form-group audit-filter-actions">
+              <button type="submit" class="btn btn-primary" id="btn-apply-filters">Filter</button>
+              <button type="button" class="btn btn-outline" id="btn-reset-filters">Reset</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Alert -->
+      <div id="audit-alert" class="alert d-none mb-4" role="alert"></div>
+
+      <!-- Audit Logs Table Card -->
+      <div class="card">
+        <div class="table-responsive">
+          <table class="data-table" id="audit-table">
+            <thead>
+              <tr>
+                <th>Timestamp (UTC)</th>
+                <th>Action</th>
+                <th>Actor</th>
+                <th>Target</th>
+                <th>IP Address</th>
+                <th>Inspection</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody">
+              <tr>
+                <td colspan="6" class="text-center py-6 text-muted">
+                  <div class="spinner"></div>
+                  <p class="mt-2 text-xs">Loading audit records from database...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Bar -->
+        <div class="pagination-container" id="pagination-bar">
+          <div class="pagination-info" id="pagination-info">
+            Showing records...
+          </div>
+          <div class="pagination-controls">
+            <button class="btn btn-sm btn-outline" id="btn-prev-page" disabled>&larr; Previous</button>
+            <span class="text-xs font-bold px-2" id="current-page-display">Page 1</span>
+            <button class="btn btn-sm btn-outline" id="btn-next-page" disabled>Next &rarr;</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Audit Record Detail Inspection Modal -->
+  <div class="modal-backdrop d-none" id="audit-detail-modal" role="dialog" aria-modal="true" aria-labelledby="modal-audit-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="badge badge-audit" id="modal-audit-badge">Action</span>
+          <h2 class="text-xl font-bold mt-1" id="modal-audit-title">Audit Record Inspection</h2>
+          <span class="text-xs font-mono text-muted" id="modal-audit-id">ID: -</span>
+        </div>
+        <button type="button" class="btn-close-modal" id="btn-close-audit-modal" aria-label="Close modal">×</button>
+      </div>
+
+      <div class="modal-body">
+        
+        <!-- Metadata Strip -->
+        <div class="applicant-info-strip mb-4">
+          <div><span class="text-muted text-xs">Timestamp:</span> <strong id="modal-timestamp">-</strong></div>
+          <div><span class="text-muted text-xs">Actor:</span> <span id="modal-actor">-</span></div>
+          <div><span class="text-muted text-xs">Target Collection:</span> <strong id="modal-target-col">-</strong></div>
+          <div><span class="text-muted text-xs">Target ID:</span> <span class="font-mono text-xs" id="modal-target-id">-</span></div>
+          <div><span class="text-muted text-xs">Client IP:</span> <span class="ip-pill" id="modal-ip">-</span></div>
+        </div>
+
+        <!-- Before / After Summary JSON Payload -->
+        <div class="review-section mb-4">
+          <div class="flex-between mb-2">
+            <h3 class="review-section-title mb-0">Event Payload / Mutation Summary</h3>
+            <button type="button" class="btn btn-xs btn-outline" id="btn-copy-payload">Copy JSON</button>
+          </div>
+          <pre class="audit-json-box" id="modal-payload-box">{}</pre>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="btn-dismiss-audit-modal">Close</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer admin-footer">
+    <div class="container footer-bottom">
+      <p>&copy; <span id="footer-year">2026</span> Municipal Service Portal — Compliance & Audit Console.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="js/admin-audit-logs.js"></script>
+</body>
+</html>

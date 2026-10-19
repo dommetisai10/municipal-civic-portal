@@ -1,0 +1,219 @@
+[
+  {
+    "slug": "birth-certificate",
+    "name": "Birth Certificate",
+    "category": "Civil Registration",
+    "description": "Issuance of official birth certificate registration for newborns and citizens born within the municipal boundaries.",
+    "availability": "Unavailable",
+    "required_documents": [
+      "Hospital Birth Report / Discharge Summary",
+      "Parents' Government Photo ID Proof (e.g. Aadhaar/Passport)",
+      "Marriage Certificate of Parents (if applicable)",
+      "Address Proof of Parents"
+    ],
+    "form_schema": [
+      {"name": "child_full_name", "label": "Full Name of Child", "type": "text", "required": true, "placeholder": "Enter full name of child"},
+      {"name": "gender", "label": "Gender", "type": "select", "required": true, "options": ["Male", "Female", "Other"]},
+      {"name": "date_of_birth", "label": "Date of Birth", "type": "date", "required": true},
+      {"name": "place_of_birth", "label": "Place of Birth (Hospital/Home)", "type": "text", "required": true, "placeholder": "Name of hospital or residence address"},
+      {"name": "father_name", "label": "Father's Full Name", "type": "text", "required": true, "placeholder": "Enter father's name"},
+      {"name": "mother_name", "label": "Mother's Full Name", "type": "text", "required": true, "placeholder": "Enter mother's name"},
+      {"name": "applicant_relationship", "label": "Relationship of Applicant to Child", "type": "select", "required": true, "options": ["Father", "Mother", "Legal Guardian", "Self"]},
+      {"name": "permanent_address", "label": "Parents' Permanent Address", "type": "textarea", "required": true, "placeholder": "Permanent residential address"}
+    ]
+  },
+  {
+    "slug": "death-certificate",
+    "name": "Death Certificate",
+    "category": "Civil Registration",
+    "description": "Official municipal registration and certification of death occurring within municipal jurisdiction.",
+    "availability": "Unavailable",
+    "required_documents": [
+      "Hospital Death Summary / Medical Certification of Cause of Death",
+      "Cremation / Burial Ground Receipt",
+      "Deceased Person's ID Proof",
+      "Applicant's Photo ID & Relationship Proof"
+    ],
+    "form_schema": [
+      {"name": "deceased_full_name", "label": "Full Name of Deceased", "type": "text", "required": true, "placeholder": "Enter name of deceased"},
+      {"name": "deceased_gender", "label": "Gender", "type": "select", "required": true, "options": ["Male", "Female", "Other"]},
+      {"name": "date_of_death", "label": "Date of Death", "type": "date", "required": true},
+      {"name": "place_of_death", "label": "Place of Death", "type": "text", "required": true, "placeholder": "Hospital name or address"},
+      {"name": "cause_of_death", "label": "Cause of Death (As certified)", "type": "text", "required": true, "placeholder": "Cause of death"},
+      {"name": "applicant_relationship", "label": "Applicant's Relationship to Deceased", "type": "select", "required": true, "options": ["Spouse", "Son", "Daughter", "Parent", "Sibling", "Legal Heir"]},
+      {"name": "cremation_ground_details", "label": "Crematorium / Burial Details", "type": "text", "required": true, "placeholder": "Name and location of facility"}
+    ]
+  },
+  {
+    "slug": "property-tax",
+    "name": "Property Tax Assessment",
+    "category": "Revenue & Taxation",
+    "description": "New property tax assessment, reassessment, ownership name transfer, and title clearance requests.",
+    "availability": "Unavailable",
+    "required_documents": [
+      "Registered Sale Deed / Title Deed",
+      "Latest Approved Building Plan",
+      "Previous Property Tax Receipt (if renewal)",
+      "Applicant's Identity & Address Proof"
+    ],
+    "form_schema": [
+      {"name": "property_id", "label": "Property Assessment Number / PID (if existing)", "type": "text", "required": false, "placeholder": "e.g. PID-100234"},
+      {"name": "request_type", "label": "Request Type", "type": "select", "required": true, "options": ["New Assessment", "Reassessment / Alteration", "Ownership Title Mutation"]},
+      {"name": "property_address", "label": "Exact Property Location", "type": "textarea", "required": true, "placeholder": "Plot, Door No, Street, Ward, Zone"},
+      {"name": "owner_full_name", "label": "Registered Owner's Full Name", "type": "text", "required": true, "placeholder": "Owner full name"},
+      {"name": "built_up_area_sqft", "label": "Built-up Area (in sq. ft.)", "type": "number", "required": true, "placeholder": "e.g. 1500"},
+      {"name": "property_usage", "label": "Property Usage Type", "type": "select", "required": true, "options": ["Residential", "Commercial", "Industrial", "Mixed Use"]}
+    ]
+  },
+  {
+    "slug": "trade-license",
+    "name": "Trade License",
+    "category": "Commercial & Licensing",
+    "description": "Application for fresh municipal trade licenses or periodic annual renewals for business premises.",
+    "availability": "Unavailable",
+    "required_documents": [
+      "Proof of Business Premises Ownership or Rental Agreement",
+      "Fire Safety NOC (for applicable commercial activities)",
+      "Partnership Deed / Incorporation Certificate",
+      "Proprietor / Director Photo ID"
+    ],
+    "form_schema": [
+      {"name": "business_name", "label": "Trade / Business Establishment Name", "type": "text", "required": true, "placeholder": "e.g. Apex Retail Enterprises"},
+      {"name": "application_type", "label": "Application Type", "type": "select", "required": true, "options": ["New License", "Annual Renewal", "Amendment of Trade"]},
+      {"name": "trade_category", "label": "Trade Category / Nature of Business", "type": "select", "required": true, "options": ["Retail Shop", "Food & Beverage / Restaurant", "Manufacturing / Workshop", "IT / Professional Services", "Warehouse / Storage"]},
+      {"name": "business_address", "label": "Business Premises Address", "type": "textarea", "required": true, "placeholder": "Commercial address with shop number"},
+      {"name": "proprietor_name", "label": "Name of Proprietor / Managing Partner", "type": "text", "required": true, "placeholder": "Full name"},
+      {"name": "number_of_employees", "label": "Number of Employees", "type": "number", "required": true, "placeholder": "e.g. 8"}
+    ]
+  },
+  {
+    "slug": "water-connection",
+    "name": "Water Connection",
+    "category": "Public Utilities",
+    "description": "Apply for a new domestic or commercial municipal piped water connection or connection transfer.",
+    "availability": "Unavailable",
+    "required_documents": [
+      "Ownership Proof of Property (Title deed or tax receipt)",
+      "Plumbing Route Blueprint",
+      "Sanctioned Building Plan Copy",
+      "Applicant Photo ID"
+    ],
+    "form_schema": [
+      {"name": "connection_type", "label": "Connection Category", "type": "select", "required": true, "options": ["Domestic Residential", "Commercial / Industrial", "Institutional"]},
+      {"name": "pipe_size_inches", "label": "Connection Pipe Diameter", "type": "select", "required": true, "options": ["0.5 inch (Domestic standard)", "0.75 inch", "1.0 inch (Commercial)"]},
+      {"name": "property_address", "label": "Premises Address for Connection", "type": "textarea", "required": true, "placeholder": "Premises location"},
+      {"name": "occupancy_count", "label": "Estimated Number of Inhabitants", "type": "number", "required": true, "placeholder": "e.g. 5"}
+    ]
+  },
+  {
+    "slug": "building-permission",
+    "name": "Building Permission",
+    "category": "Town Planning",
+    "description": "Sanction of architectural building plans, construction permits, and structural alteration approvals.",
+    "availability": "Unavailable",
+    "required_documents": [
+      "Architect-certified Building Plan Drawings",
+      "Title Deed and Land Non-Encumbrance Certificate",
+      "Structural Stability Certificate",
+      "Site Layout Plan and Soil Test Report"
+    ],
+    "form_schema": [
+      {"name": "applicant_full_name", "label": "Applicant / Developer Name", "type": "text", "required": true, "placeholder": "Full name"},
+      {"name": "construction_type", "label": "Construction Proposal", "type": "select", "required": true, "options": ["New Residential Building", "Commercial Complex", "Addition / Alteration", "Demolition and Reconstruction"]},
+      {"name": "plot_number", "label": "Plot / Survey Number", "type": "text", "required": true, "placeholder": "e.g. Plot 42, Survey 108/A"},
+      {"name": "proposed_floors", "label": "Number of Proposed Floors", "type": "select", "required": true, "options": ["Ground Floor Only", "G + 1", "G + 2", "G + 3 or more"]},
+      {"name": "licensed_architect_name", "label": "Licensed Architect / Engineer Name & Reg No", "type": "text", "required": true, "placeholder": "Architect name and Council Reg No"}
+    ]
+  },
+  {
+    "slug": "marriage-registration",
+    "name": "Marriage Registration",
+    "category": "Civil Registration",
+    "description": "Official municipal certification and registration of solemnized marriages.",
+    "availability": "Unavailable",
+    "required_documents": [
+      "Marriage Invitation Card or Religious Solemnization Certificate",
+      "Age Proof of Bride and Groom (Birth Certificate or Passport)",
+      "Residence Proof of Both Parties",
+      "Joint Marriage Photograph & 3 Witnesses' ID Proofs"
+    ],
+    "form_schema": [
+      {"name": "groom_full_name", "label": "Groom's Full Name", "type": "text", "required": true, "placeholder": "Groom full name"},
+      {"name": "bride_full_name", "label": "Bride's Full Name", "type": "text", "required": true, "placeholder": "Bride full name"},
+      {"name": "date_of_marriage", "label": "Date of Solemnization", "type": "date", "required": true},
+      {"name": "place_of_marriage", "label": "Place / Venue of Marriage", "type": "text", "required": true, "placeholder": "Community hall or address"},
+      {"name": "witness_details", "label": "Names and Contacts of 3 Witnesses", "type": "textarea", "required": true, "placeholder": "Witness 1: ...\nWitness 2: ...\nWitness 3: ..."}
+    ]
+  },
+  {
+    "slug": "sanitation-service",
+    "name": "Sanitation & Public Health",
+    "category": "Health & Sanitation",
+    "description": "Special municipal sanitation, pest spraying, septic tank clearance, and public disinfectant drives.",
+    "availability": "Unavailable",
+    "required_documents": [
+      "Property Ownership or Tenancy Proof",
+      "Applicant Photo ID"
+    ],
+    "form_schema": [
+      {"name": "service_requested", "label": "Sanitation Service Type", "type": "select", "required": true, "options": ["Septic Tank Emptying", "Vector / Mosquito Fogging", "Public Drain Cleaning", "Disinfection Drive"]},
+      {"name": "locality_address", "label": "Target Locality / Building Address", "type": "textarea", "required": true, "placeholder": "Address requiring sanitation service"},
+      {"name": "urgency_level", "label": "Urgency Assessment", "type": "select", "required": true, "options": ["Routine", "High - Public Health Risk"]}
+    ]
+  },
+  {
+    "slug": "streetlight-repair",
+    "name": "Streetlight Repair Request",
+    "category": "Electrical & Lighting",
+    "description": "Request maintenance, bulb replacement, or wiring repairs for municipal street lights.",
+    "availability": "Unavailable",
+    "required_documents": [],
+    "form_schema": [
+      {"name": "pole_number", "label": "Pole Number / Code (Marked on pole)", "type": "text", "required": true, "placeholder": "e.g. SL-WD4-082"},
+      {"name": "street_location", "label": "Street / Ward Location", "type": "text", "required": true, "placeholder": "Street name, cross road"},
+      {"name": "landmark", "label": "Nearest Landmark", "type": "text", "required": true, "placeholder": "Nearby school, park, shop"},
+      {"name": "problem_nature", "label": "Issue Description", "type": "select", "required": true, "options": ["Lamp Not Working", "Flickering Continuously", "Damaged Fixture / Wire Loose", "Pole Damaged"]}
+    ]
+  },
+  {
+    "slug": "drainage-service",
+    "name": "Drainage & Sewerage",
+    "category": "Engineering & Drainage",
+    "description": "Report severe blockage, overflowing stormwater drains, or request underground drainage inspection.",
+    "availability": "Unavailable",
+    "required_documents": [],
+    "form_schema": [
+      {"name": "drain_location", "label": "Exact Location of Blockage", "type": "textarea", "required": true, "placeholder": "Ward, street, building front"},
+      {"name": "issue_type", "label": "Type of Drainage Problem", "type": "select", "required": true, "options": ["Overflowing Sewage", "Stormwater Drain Choked", "Broken Chamber Cover", "Stagnant Water Hazard"]},
+      {"name": "impact_description", "label": "Public Impact & Details", "type": "textarea", "required": true, "placeholder": "Describe severity, water levels, road hindrance"}
+    ]
+  },
+  {
+    "slug": "waste-collection",
+    "name": "Solid Waste Collection",
+    "category": "Waste Management",
+    "description": "Scheduled bulk waste pickup, commercial debris disposal, or horticulture waste removal requests.",
+    "availability": "Unavailable",
+    "required_documents": [],
+    "form_schema": [
+      {"name": "waste_type", "label": "Category of Waste", "type": "select", "required": true, "options": ["Construction & Demolition Debris", "Bulk Household Items / Furniture", "Garden & Tree Pruning Waste", "Commercial Packaging"]},
+      {"name": "pickup_address", "label": "Collection Point Address", "type": "textarea", "required": true, "placeholder": "Pickup location"},
+      {"name": "estimated_volume", "label": "Estimated Volume", "type": "select", "required": true, "options": ["1-2 Bags", "Half Truckload", "Full Truckload"]}
+    ]
+  },
+  {
+    "slug": "other-civic-service",
+    "name": "Other Civic Request",
+    "category": "General Administration",
+    "description": "General civic administrative inquiries, tree trimming permissions, and non-categorized municipal requests.",
+    "availability": "Unavailable",
+    "required_documents": [
+      "Applicant Photo ID Proof"
+    ],
+    "form_schema": [
+      {"name": "request_subject", "label": "Subject of Request", "type": "text", "required": true, "placeholder": "Brief title of your request"},
+      {"name": "department_name", "label": "Concerned Department", "type": "select", "required": true, "options": ["General Administration", "Horticulture", "Revenue", "Health", "Engineering"]},
+      {"name": "request_details", "label": "Detailed Explanation", "type": "textarea", "required": true, "placeholder": "Provide full background, purpose, and specific relief requested"}
+    ]
+  }
+]

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Citizen Sign In | Municipal Service Portal</title>
+  <meta name="description" content="Sign in to your Municipal Service Portal citizen account to manage applications, complaints, and view your civic profile.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-page">
+  <!-- Accessibility Skip Navigation -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Top System Status Bar -->
+  <div class="top-notice-bar" role="region" aria-label="System Notice and Status">
+    <div class="container">
+      <div>
+        <span>Demonstration Civic Portal — Clean Data Architecture</span>
+      </div>
+      <div class="db-status-pill" id="db-connection-badge">
+        <span class="status-dot" id="db-status-dot"></span>
+        <span id="db-status-text">Checking database...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-link" id="brand-home-link" aria-label="Municipal Service Portal Home">
+        <div class="brand-icon" aria-hidden="true">MSP</div>
+        <div class="brand-text">
+          <span class="brand-name dynamic-portal-name">Municipal Service Portal</span>
+          <span class="brand-tagline">Citizen Services &amp; Grievances</span>
+        </div>
+      </a>
+
+      <nav class="main-nav" id="main-nav">
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="services.html" class="nav-link">Services</a></li>
+          <li><a href="track-status.html" class="nav-link">Track Status</a></li>
+        </ul>
+        <div class="nav-actions">
+          <a href="register.html" class="btn btn-sm btn-outline">Create Account</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main-content" class="auth-main-container">
+    <div class="auth-card" id="login-card">
+      <div class="auth-header">
+        <div class="auth-icon" aria-hidden="true">👤</div>
+        <h1 class="auth-title">Citizen Sign In</h1>
+        <p class="auth-subtitle">Access your applications, track grievances, and manage civic requests.</p>
+      </div>
+
+      <div id="auth-alert" class="alert-box" style="display: none;" role="alert"></div>
+
+      <form id="login-form" novalidate>
+        <div class="form-group">
+          <label for="login-email" class="form-label">Email Address <span class="required-star">*</span></label>
+          <input
+            type="email"
+            id="login-email"
+            name="email"
+            class="form-control"
+            placeholder="citizen@example.com"
+            required
+            autocomplete="email"
+          >
+          <div class="field-error" id="email-error"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="login-password" class="form-label">Password <span class="required-star">*</span></label>
+          <input
+            type="password"
+            id="login-password"
+            name="password"
+            class="form-control"
+            placeholder="Enter your password"
+            required
+            autocomplete="current-password"
+          >
+          <div class="field-error" id="password-error"></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-submit-btn">
+          <span id="btn-text">Sign In to Dashboard</span>
+          <span id="btn-spinner" class="spinner" style="display: none;" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <p>Don't have an account yet? <a href="register.html" class="link-primary">Register as a Citizen</a></p>
+        <p class="admin-login-hint">Are you a municipal official? <a href="admin-login.html" class="link-secondary">Staff / Admin Login</a></p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-bottom">
+        <div>
+          &copy; <span id="current-year">2026</span> <span class="dynamic-portal-name">Municipal Service Portal</span>. All rights reserved.
+        </div>
+        <div>
+          <span>Demonstration portal — Zero fake records</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <script type="module" src="js/auth.js"></script>
+</body>
+</html>
