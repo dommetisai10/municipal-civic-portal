@@ -25,13 +25,22 @@ def get_mongo_client(uri=None):
         except Exception:
             pass
 
+        # Robust Atlas TLS root CA certificate resolution
+        tls_kwargs = {}
+        try:
+            import certifi
+            tls_kwargs["tlsCAFile"] = certifi.where()
+        except ImportError:
+            pass
+
         # 5-second server selection timeout accommodates remote Atlas TLS handshakes
         _mongo_client = MongoClient(
             target_uri,
             serverSelectionTimeoutMS=5000,
             connectTimeoutMS=5000,
             socketTimeoutMS=10000,
-            uuidRepresentation="standard"
+            uuidRepresentation="standard",
+            **tls_kwargs
         )
     return _mongo_client
 

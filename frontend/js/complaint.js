@@ -71,6 +71,17 @@ async function loadDepartments() {
   if (!deptSelect) return;
 
   try {
+    const res = await apiFetch("/complaints/categories", { method: "GET" });
+    if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+      deptSelect.innerHTML = `<option value="">-- Select Grievance Category --</option>` +
+        res.data.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join("");
+      return;
+    }
+  } catch (err) {
+    console.warn("Failed to load /complaints/categories, checking /complaints/departments:", err);
+  }
+
+  try {
     const res = await apiFetch("/complaints/departments", { method: "GET" });
     if (res.success && Array.isArray(res.data)) {
       deptSelect.innerHTML = `<option value="">-- Select Department --</option>` +
@@ -332,6 +343,12 @@ function setupComplaintFormSubmit() {
     payload.append("department", deptVal);
     payload.append("description", descVal);
     payload.append("location", locVal);
+
+    const landmarkInput = document.getElementById("complaint-landmark");
+    const landmarkVal = landmarkInput?.value.trim() || "";
+    if (landmarkVal) {
+      payload.append("landmark", landmarkVal);
+    }
 
     if (latInput?.value && lngInput?.value) {
       payload.append("latitude", latInput.value);

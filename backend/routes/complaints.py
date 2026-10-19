@@ -24,6 +24,18 @@ logger = logging.getLogger(__name__)
 
 complaints_bp = Blueprint("complaints", __name__, url_prefix="/api")
 
+COMPLAINT_CATEGORIES = [
+    "Garbage Collection",
+    "Water Supply",
+    "Road Damage",
+    "Drainage Problems",
+    "Streetlight Problems",
+    "Public Sanitation",
+    "Illegal Dumping",
+    "Public Infrastructure",
+    "Other Municipal Problems"
+]
+
 MUNICIPAL_DEPARTMENTS = [
     "Sanitation & Waste Management",
     "Roads & Infrastructure",
@@ -38,6 +50,12 @@ MUNICIPAL_DEPARTMENTS = [
 ]
 
 
+@complaints_bp.route("/complaints/categories", methods=["GET"])
+def get_categories():
+    """Returns the list of recognized complaint categories per specification."""
+    return success_response(data=COMPLAINT_CATEGORIES)
+
+
 @complaints_bp.route("/complaints/departments", methods=["GET"])
 def get_departments():
     """Returns the list of municipal departments available for grievance routing."""
@@ -49,10 +67,10 @@ def get_departments():
 @csrf_protect
 def submit_complaint():
     """
-    Submits a new citizen grievance / complaint with location details and image proofs.
+    Submits a new citizen grievance / complaint with location details, landmark, and image proofs.
 
     STRICT CLEAN DATA & SECURITY RULES:
-    - Enforces department routing to designated municipal departments.
+    - Enforces department routing to designated municipal departments or categories.
     - Title, description, and location undergo length and injection validation.
     - File uploads strictly restricted to images (JPG, JPEG, PNG, max 5 MB).
     - Binary magic bytes inspection prevents spoofed extensions.
@@ -66,15 +84,23 @@ def submit_complaint():
         if not ok:
             return error_response(code="VALIDATION_ERROR", message=title, fields={"title": title}, status_code=400)
 
-        # 2. Validate Department
-        department = request.form.get("department", "").strip()
-        if department not in MUNICIPAL_DEPARTMENTS:
+        # 2. Validate Category / Department
+        raw_cat = request.form.get("category", "").strip()
+        raw_dept = request.form.get("department", "").strip()
+        chosen = raw_cat or raw_dept
+
+        all_valid_options = COMPLAINT_CATEGORIES + MUNICIPAL_DEPARTMENTS
+        if not chosen or chosen not in all_valid_options:
+            err_code = "INVALID_DEPARTMENT" if raw_dept else "INVALID_CATEGORY"
             return error_response(
-                code="INVALID_DEPARTMENT",
-                message=f"Department must be one of the recognized municipal departments.",
-                fields={"department": f"Must be one of {MUNICIPAL_DEPARTMENTS}"},
+                code=err_code,
+                message="Grievance category must be one of the recognized municipal categories.",
+                fields={"category": f"Must be one of {COMPLAINT_CATEGORIES}"},
                 status_code=400
             )
+
+        category = chosen
+        department = chosen
 
         # 3. Validate Description
         raw_desc = request.form.get("description")
@@ -87,6 +113,11 @@ def submit_complaint():
         ok, location = sanitize_string(raw_loc, field_name="Location", min_length=5, max_length=300, required=True)
         if not ok:
             return error_response(code="VALIDATION_ERROR", message=location, fields={"location": location}, status_code=400)
+
+        # 4b. Optional Landmark
+        raw_landmark = request.form.get("landmark")
+        ok_lm, landmark = sanitize_string(raw_landmark, field_name="Landmark", min_length=0, max_length=150, required=False)
+        landmark_val = landmark if (ok_lm and landmark) else None
 
         # 5. Optional GPS Coordinates
         coordinates = None
@@ -136,9 +167,11 @@ def submit_complaint():
             "user_name": session.get("full_name", ""),
             "title": title,
             "department": department,
-            "category": department,
+            "category": category,
             "description": description,
             "location": location,
+            "landmark": landmark_val,
+            "assigned_department": "Unassigned",
             "coordinates": coordinates,
             "images": uploaded_images,
             "status": "Submitted",
@@ -277,9 +310,12 @@ def get_complaint_detail(complaint_id):
         return success_response(data={
             "complaint_id": doc.get("complaint_id"),
             "title": doc.get("title"),
+            "category": doc.get("category", doc.get("department", "General")),
             "department": doc.get("department"),
+            "assigned_department": doc.get("assigned_department", "Unassigned"),
             "description": doc.get("description"),
             "location": doc.get("location"),
+            "landmark": doc.get("landmark"),
             "coordinates": doc.get("coordinates"),
             "status": doc.get("status"),
             "images": safe_images,

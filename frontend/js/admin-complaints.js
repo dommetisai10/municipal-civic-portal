@@ -243,6 +243,7 @@ function setupModalHandlers() {
     if (!activeReviewCmpId) return;
 
     const newStatus = document.getElementById("officer-cmp-status")?.value;
+    const reassignDept = document.getElementById("officer-cmp-reassign-dept")?.value;
     const remarks = document.getElementById("officer-cmp-remarks")?.value.trim();
     const alertBox = document.getElementById("modal-cmp-action-alert");
 
@@ -260,10 +261,20 @@ function setupModalHandlers() {
     if (btnText) btnText.textContent = "Recording...";
 
     try {
-      const res = await apiFetch(`/admin/complaints/${encodeURIComponent(activeReviewCmpId)}/status`, {
-        method: "PATCH",
-        body: { status: newStatus, remarks }
-      });
+      let res;
+      if (reassignDept) {
+        // Grievance assignment endpoint
+        res = await apiFetch(`/admin/complaints/${encodeURIComponent(activeReviewCmpId)}/assign`, {
+          method: "PATCH",
+          body: { department: reassignDept, remarks }
+        });
+      } else {
+        // Standard resolution status endpoint
+        res = await apiFetch(`/admin/complaints/${encodeURIComponent(activeReviewCmpId)}/status`, {
+          method: "PATCH",
+          body: { status: newStatus, remarks }
+        });
+      }
 
       if (!res.success) {
         if (alertBox) {
@@ -275,7 +286,10 @@ function setupModalHandlers() {
       }
 
       closeModal();
-      showAdminCmpAlert(`Grievance ${activeReviewCmpId} status updated to '${newStatus}'.`, "success");
+      const actionMsg = reassignDept
+        ? `Grievance ${activeReviewCmpId} assigned to '${reassignDept}'.`
+        : `Grievance ${activeReviewCmpId} status updated to '${newStatus}'.`;
+      showAdminCmpAlert(actionMsg, "success");
       await loadComplaints();
 
     } catch (err) {

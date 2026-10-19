@@ -39,7 +39,7 @@ async function verifyClientMagicBytes(file) {
 
 async function initApplicationPage() {
   const params = new URLSearchParams(window.location.search);
-  const serviceSlug = params.get("service");
+  const serviceSlug = params.get("slug") || params.get("service");
 
   const loadingCard = document.getElementById("service-loading-card");
   const authCard = document.getElementById("auth-required-card");
@@ -52,7 +52,7 @@ async function initApplicationPage() {
         <div class="empty-icon">⚠️</div>
         <h3>No Service Selected</h3>
         <p class="text-muted mb-4">Please select a municipal service from the directory to begin an application.</p>
-        <a href="services.html" class="btn btn-primary">Browse Services Directory</a>
+        <a href="index.html#services-section" class="btn btn-primary">Browse Services Catalog</a>
       `;
     }
     return;
@@ -84,7 +84,7 @@ async function initApplicationPage() {
           <div class="empty-icon">❌</div>
           <h3>Service Not Found</h3>
           <p class="text-muted mb-4">The requested service '${escapeHtml(serviceSlug)}' could not be found in the database.</p>
-          <a href="services.html" class="btn btn-outline">Back to Services</a>
+          <a href="index.html#services-section" class="btn btn-outline">Back to Services</a>
         `;
       }
       return;
@@ -118,7 +118,7 @@ async function initApplicationPage() {
         <div class="empty-icon">🔌</div>
         <h3>Database Offline</h3>
         <p class="text-muted mb-4">Could not retrieve application requirements from the database.</p>
-        <a href="services.html" class="btn btn-outline">Back to Services</a>
+        <a href="index.html#services-section" class="btn btn-outline">Back to Services</a>
       `;
     }
   }

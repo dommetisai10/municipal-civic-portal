@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Catalog Management | Municipal Service Portal</title>
+  <meta name="description" content="Municipal Service Portal Service Catalog Management. Create, edit, toggle availability, and configure application requirements.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dashboard-page admin-body">
+  <!-- Accessibility Skip Link -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Top System Status Bar -->
+  <div class="top-notice-bar admin-notice-bar" role="region" aria-label="Administrative System Notice">
+    <div class="container">
+      <div>
+        <span>🔒 Official Municipal Administration Portal — Strict Clean Data Architecture</span>
+      </div>
+      <div class="db-status-pill" id="db-connection-badge">
+        <span class="status-dot" id="db-status-dot"></span>
+        <span id="db-status-text">Checking database...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header & Navigation -->
+  <header class="site-header admin-header">
+    <div class="container nav-container">
+      <a href="admin-dashboard.html" class="brand-link">
+        <div class="brand-icon admin-brand-icon">MSP</div>
+        <div class="brand-text">
+          <span class="brand-name">Admin Portal</span>
+          <span class="brand-tagline">Municipal Control Center</span>
+        </div>
+      </a>
+
+      <nav class="admin-top-nav">
+        <a href="admin-dashboard.html" class="nav-link">Overview</a>
+        <a href="admin-applications.html" class="nav-link">Applications</a>
+        <a href="admin-complaints.html" class="nav-link">Grievances</a>
+        <a href="service-management.html" class="nav-link active">Services</a>
+        <a href="citizens.html" class="nav-link">Citizens</a>
+        <a href="reports.html" class="nav-link">Reports</a>
+        <a href="admin-audit-logs.html" class="nav-link">Audit Logs</a>
+      </nav>
+
+      <div class="admin-user-nav">
+        <div class="admin-profile-pill">
+          <span class="admin-role-badge">Admin</span>
+          <span class="admin-email-text" id="admin-user-display">Loading officer...</span>
+        </div>
+        <button class="btn btn-sm btn-outline btn-admin-logout" id="btn-admin-logout">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main-content" class="py-6">
+    <div class="container">
+      
+      <!-- Top Action Bar -->
+      <div class="dashboard-banner mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-neutral-900">Municipal Services Catalog</h1>
+          <p class="text-muted text-sm mt-1">Configure civic services, update document requirements, and toggle citizen availability.</p>
+        </div>
+        <div>
+          <button type="button" class="btn btn-primary" id="btn-add-service">
+            + Add New Service
+          </button>
+        </div>
+      </div>
+
+      <!-- Alert Notification -->
+      <div id="service-mgmt-alert" class="alert d-none mb-4" role="alert"></div>
+
+      <!-- Search & Category Filters -->
+      <div class="card mb-6">
+        <div class="table-filters-grid">
+          <div class="filter-item">
+            <label for="service-search-input" class="form-label text-xs">Search Services</label>
+            <input 
+              type="text" 
+              id="service-search-input" 
+              class="form-control" 
+              placeholder="Search by name, category, or slug..."
+            >
+          </div>
+          <div class="filter-item">
+            <label for="category-filter" class="form-label text-xs">Category</label>
+            <select id="category-filter" class="form-control">
+              <option value="ALL">All Categories</option>
+              <option value="Civil Registration">Civil Registration</option>
+              <option value="Revenue & Taxation">Revenue &amp; Taxation</option>
+              <option value="Public Works & Utilities">Public Works &amp; Utilities</option>
+              <option value="Commercial & Licensing">Commercial &amp; Licensing</option>
+              <option value="Sanitation & Environment">Sanitation &amp; Environment</option>
+              <option value="General Administration">General Administration</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label for="availability-filter" class="form-label text-xs">Availability</label>
+            <select id="availability-filter" class="form-control">
+              <option value="ALL">All Statuses</option>
+              <option value="Available">Available / Active</option>
+              <option value="Unavailable">Unavailable</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Services Table Card -->
+      <div class="card">
+        <div class="card-header flex-between mb-4">
+          <div>
+            <h2 class="text-lg font-bold">Catalog Directory</h2>
+            <span class="text-xs text-muted" id="services-count-text">Loading catalog...</span>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline" id="btn-refresh-services">
+            🔄 Refresh
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="services-table">
+            <thead>
+              <tr>
+                <th>Service Name &amp; Slug</th>
+                <th>Category</th>
+                <th>Required Docs</th>
+                <th>Processing Time</th>
+                <th>Fee</th>
+                <th>Citizen Applications</th>
+                <th>Availability</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="services-table-body">
+              <tr>
+                <td colspan="8" class="text-center py-6 text-muted">
+                  Loading services from MongoDB...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Add / Edit Service Modal -->
+  <div id="service-form-modal" class="modal-backdrop d-none" role="dialog" aria-modal="true" aria-labelledby="service-modal-title">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <h2 class="modal-title" id="service-modal-title">Add Municipal Service</h2>
+        <button type="button" class="btn-close-modal" id="modal-service-close" aria-label="Close">×</button>
+      </div>
+      <form id="service-form">
+        <div class="modal-body">
+          <input type="hidden" id="service-form-mode" value="create">
+          <input type="hidden" id="service-form-orig-slug" value="">
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="service-name-input" class="form-label">Service Name <span class="text-danger">*</span></label>
+              <input type="text" id="service-name-input" class="form-control" placeholder="e.g. Birth Certificate Issuance" required minlength="3">
+            </div>
+            <div class="form-group flex-1">
+              <label for="service-slug-input" class="form-label">URL Slug (e.g. birth-certificate)</label>
+              <input type="text" id="service-slug-input" class="form-control" placeholder="Auto-generated if left blank">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="service-category-input" class="form-label">Category <span class="text-danger">*</span></label>
+              <select id="service-category-input" class="form-control" required>
+                <option value="Civil Registration">Civil Registration</option>
+                <option value="Revenue & Taxation">Revenue &amp; Taxation</option>
+                <option value="Public Works & Utilities">Public Works &amp; Utilities</option>
+                <option value="Commercial & Licensing">Commercial &amp; Licensing</option>
+                <option value="Sanitation & Environment">Sanitation &amp; Environment</option>
+                <option value="General Administration">General Administration</option>
+              </select>
+            </div>
+            <div class="form-group flex-1">
+              <label for="service-avail-input" class="form-label">Availability <span class="text-danger">*</span></label>
+              <select id="service-avail-input" class="form-control" required>
+                <option value="Available">Available</option>
+                <option value="Unavailable">Unavailable</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="service-processing-input" class="form-label">Processing Days</label>
+              <input type="number" id="service-processing-input" class="form-control" value="7" min="1" max="90">
+            </div>
+            <div class="form-group flex-1">
+              <label for="service-fee-input" class="form-label">Statutory Fee ($)</label>
+              <input type="number" id="service-fee-input" class="form-control" value="0" min="0" step="0.5">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="service-desc-input" class="form-label">Description <span class="text-danger">*</span></label>
+            <textarea id="service-desc-input" class="form-control" rows="3" placeholder="Explain the purpose, guidelines, and eligibility for this municipal service..." required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Required Supporting Documents</label>
+            <div class="text-xs text-muted mb-2">Specify physical proofs citizens must upload with this application.</div>
+            <div id="docs-inputs-container" class="docs-inputs-container">
+              <!-- Dynamically populated document inputs -->
+            </div>
+            <button type="button" class="btn btn-sm btn-outline mt-2" id="btn-add-doc-field">
+              + Add Document Requirement
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="modal-service-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="modal-service-submit">Save Service</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- JavaScript ES Module -->
+  <script type="module" src="js/service-management.js"></script>
+</body>
+</html>

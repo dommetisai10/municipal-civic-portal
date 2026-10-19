@@ -42,7 +42,7 @@
       <nav class="main-nav" id="main-nav" aria-label="Main Navigation">
         <ul class="nav-links">
           <li><a href="index.html" class="nav-link active" id="nav-link-home">Home</a></li>
-          <li><a href="services.html" class="nav-link" id="nav-link-services">Services</a></li>
+          <li><a href="#services-section" class="nav-link" id="nav-link-services">Services</a></li>
           <li><a href="submit-complaint.html" class="nav-link" id="nav-link-complaint">Submit Complaint</a></li>
           <li><a href="track-status.html" class="nav-link" id="nav-link-track">Track Status</a></li>
           <li><a href="#contact-section" class="nav-link" id="nav-link-contact">Contact</a></li>
@@ -71,7 +71,7 @@
             Apply online for municipal certificates and permits, file civic complaints with live photographic evidence, and track processing transparency in real-time.
           </p>
           <div class="hero-cta-group">
-            <a href="services.html" class="btn btn-primary btn-lg" id="hero-apply-btn">Apply for a Service</a>
+            <a href="#services-section" class="btn btn-primary btn-lg" id="hero-apply-btn">Apply for a Service</a>
             <a href="submit-complaint.html" class="btn btn-secondary btn-lg" id="hero-complaint-btn">Lodge a Complaint</a>
             <a href="track-status.html" class="btn btn-outline btn-lg" id="hero-track-btn">Track Status</a>
           </div>
@@ -90,7 +90,7 @@
             <p class="action-card-desc">
               Birth and death certificates, property tax requests, trade licenses, building permissions, and water connections.
             </p>
-            <a href="services.html" class="btn btn-sm btn-secondary" id="action-browse-services-btn">Browse Catalog &rarr;</a>
+            <a href="#services-section" class="btn btn-sm btn-secondary" id="action-browse-services-btn">Browse Catalog &rarr;</a>
           </article>
 
           <!-- Card 2 -->
@@ -116,37 +116,45 @@
       </div>
     </section>
 
-    <!-- How It Works Section -->
+    <!-- How It Works Section (4 Steps per specification) -->
     <section class="section" id="how-it-works-section" aria-labelledby="how-it-works-heading">
       <div class="container">
         <div class="section-header">
           <span class="section-badge">Simple &amp; Transparent</span>
           <h2 class="section-title" id="how-it-works-heading">How the Portal Works</h2>
-          <p class="section-subtitle">A simple 3-step digital process designed for citizen accessibility and accountability.</p>
+          <p class="section-subtitle">A straightforward 4-step digital workflow designed for citizen accessibility, speed, and accountability.</p>
         </div>
 
-        <div class="steps-grid">
+        <div class="steps-grid steps-grid-4">
           <div class="step-card" id="step-card-1">
             <div class="step-number" aria-hidden="true">1</div>
-            <h3 class="step-title">Choose Service or Complaint</h3>
+            <h3 class="step-title">Choose Service</h3>
             <p class="step-desc">
-              Select the required service category, complete the structured application form, or describe your grievance with location details.
+              Browse the catalog of 12+ civic services or file a civic grievance for your municipal ward.
             </p>
           </div>
 
           <div class="step-card" id="step-card-2">
             <div class="step-number" aria-hidden="true">2</div>
-            <h3 class="step-title">Receive Secure Reference ID</h3>
+            <h3 class="step-title">Fill Application</h3>
             <p class="step-desc">
-              Upon successful submission and database acknowledgment, receive a unique identifier (e.g., <code>MSP-APP-2026-XXXX</code> or <code>MSP-CMP-2026-XXXX</code>).
+              Complete the structured dynamic form fields with honest details and contact information.
             </p>
           </div>
 
           <div class="step-card" id="step-card-3">
             <div class="step-number" aria-hidden="true">3</div>
-            <h3 class="step-title">Track Review &amp; Resolution</h3>
+            <h3 class="step-title">Upload Documents</h3>
             <p class="step-desc">
-              Municipal officers review documents, assign grievances to field departments, and log resolution remarks with full timestamped audit trails.
+              Attach required identity proofs and supporting documents in safe PDF or JPG formats.
+            </p>
+          </div>
+
+          <div class="step-card" id="step-card-4">
+            <div class="step-number" aria-hidden="true">4</div>
+            <h3 class="step-title">Track &amp; Receive</h3>
+            <p class="step-desc">
+              Monitor real-time officer reviews, department updates, and download verified certificates.
             </p>
           </div>
         </div>
@@ -154,12 +162,34 @@
     </section>
 
     <!-- Dynamic Services Catalog Section -->
-    <section class="section" id="services-section" aria-labelledby="services-catalog-heading" style="background-color: var(--white);">
+    <section class="section" id="services-section" aria-labelledby="services-catalog-heading" style="background-color: var(--white); scroll-margin-top: 80px;">
       <div class="container">
         <div class="section-header">
           <span class="section-badge">Municipal Catalog</span>
           <h2 class="section-title" id="services-catalog-heading">Available Civic Services</h2>
           <p class="section-subtitle">Real-time listing of active municipal services backed by live database configuration.</p>
+        </div>
+
+        <!-- Catalog Filter and Search Bar -->
+        <div class="catalog-filter-bar mb-6">
+          <div class="search-input-wrapper">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input 
+              type="text" 
+              id="home-service-search" 
+              class="form-control" 
+              placeholder="Search services (e.g. birth, tax, water, permit)..." 
+              aria-label="Search municipal services"
+            >
+          </div>
+          <div class="category-pills-bar" id="category-pills">
+            <button type="button" class="category-pill active" data-category="ALL">All Services</button>
+            <button type="button" class="category-pill" data-category="Civil Registration">Certificates</button>
+            <button type="button" class="category-pill" data-category="Revenue & Taxation">Taxes &amp; Revenue</button>
+            <button type="button" class="category-pill" data-category="Public Works & Utilities">Utilities &amp; Water</button>
+            <button type="button" class="category-pill" data-category="Commercial & Licensing">Licensing &amp; Trade</button>
+            <button type="button" class="category-pill" data-category="Sanitation & Environment">Sanitation</button>
+          </div>
         </div>
 
         <!-- Rendered dynamically by home.js from GET /api/services -->
@@ -251,6 +281,44 @@
       </div>
     </div>
   </footer>
+
+  <!-- Service Detail Interactive Modal -->
+  <div id="service-detail-modal" class="modal-backdrop d-none" role="dialog" aria-modal="true" aria-labelledby="modal-service-name">
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <div>
+          <span class="badge badge-category" id="modal-service-category">Category</span>
+          <h2 class="modal-title mt-1" id="modal-service-name">Service Name</h2>
+        </div>
+        <button type="button" class="btn-close-modal" id="modal-close-btn" aria-label="Close modal">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="text-secondary mb-4" id="modal-service-desc"></p>
+        <div class="service-meta-grid mb-4">
+          <div class="meta-item">
+            <span class="meta-label">Processing Time</span>
+            <span class="meta-val" id="modal-service-processing">7 Working Days</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Statutory Fee</span>
+            <span class="meta-val" id="modal-service-fee">Free</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Availability</span>
+            <span class="meta-val" id="modal-service-status">Available</span>
+          </div>
+        </div>
+        <div class="mb-4">
+          <h4 class="text-sm font-bold mb-2">Required Supporting Documents:</h4>
+          <ul class="modal-doc-list" id="modal-service-docs"></ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="modal-cancel-btn">Close</button>
+        <button type="button" class="btn btn-primary" id="modal-apply-btn">Apply Online &rarr;</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast Notification Container -->
   <div id="toast-container" aria-live="polite" aria-atomic="true"></div>

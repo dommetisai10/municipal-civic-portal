@@ -167,19 +167,35 @@
             <!-- Location Address -->
             <div class="form-group">
               <label for="complaint-location" class="form-label">
-                Street Address / Landmark <span class="text-danger">*</span>
+                Street Address / Location <span class="text-danger">*</span>
               </label>
               <input 
                 type="text" 
                 id="complaint-location" 
                 name="location" 
                 class="form-control" 
-                placeholder="e.g. Opposite Community Hall, Ward 14, Main Market Road"
+                placeholder="e.g. Ward 14, Main Market Road, Cross 4"
                 required
                 minlength="5"
                 maxlength="300"
               >
               <div class="field-error-text text-danger text-xs mt-1 d-none" id="error_location"></div>
+            </div>
+
+            <!-- Nearby Landmark -->
+            <div class="form-group">
+              <label for="complaint-landmark" class="form-label">
+                Nearby Landmark (Optional)
+              </label>
+              <input 
+                type="text" 
+                id="complaint-landmark" 
+                name="landmark" 
+                class="form-control" 
+                placeholder="e.g. Near Overhead Water Tank, Opposite Community Hall"
+                maxlength="150"
+              >
+              <div class="form-text text-muted text-xs">A prominent nearby landmark helps field inspectors locate the site faster.</div>
             </div>
 
             <!-- Geolocation Button & Coordinates Display -->

@@ -38,6 +38,9 @@
         <a href="admin-dashboard.html" class="nav-link">Overview</a>
         <a href="admin-applications.html" class="nav-link">Applications</a>
         <a href="admin-complaints.html" class="nav-link active">Grievances</a>
+        <a href="service-management.html" class="nav-link">Services</a>
+        <a href="citizens.html" class="nav-link">Citizens</a>
+        <a href="reports.html" class="nav-link">Reports</a>
         <a href="admin-audit-logs.html" class="nav-link">Audit Logs</a>
       </nav>
 
@@ -172,14 +175,34 @@
         <div class="review-decision-card">
           <h3 class="review-section-title text-primary">Officer Resolution Action</h3>
           <form id="officer-cmp-decision-form">
-            <div class="form-group mb-3">
-              <label for="officer-cmp-status" class="form-label font-bold">Updated Status <span class="text-danger">*</span></label>
-              <select id="officer-cmp-status" class="form-control" required>
-                <option value="Under Review">Under Review (Assigned to Field Staff)</option>
-                <option value="Action Required">Action Required (Need Citizen Clarification)</option>
-                <option value="Resolved">Resolved (Work Completed)</option>
-                <option value="Rejected">Rejected (Out of Jurisdiction / Invalid)</option>
-              </select>
+            <div class="form-row mb-3">
+              <div class="form-group flex-1">
+                <label for="officer-cmp-status" class="form-label font-bold">Workflow Status <span class="text-danger">*</span></label>
+                <select id="officer-cmp-status" class="form-control" required>
+                  <option value="Assigned">Assigned (Designated to Dept / Field Unit)</option>
+                  <option value="Under Review">Under Review (Inspection Pending)</option>
+                  <option value="In Progress">In Progress (Civic Work Underway)</option>
+                  <option value="Action Required">Action Required (Need Citizen Clarification)</option>
+                  <option value="Resolved">Resolved (Work Completed)</option>
+                  <option value="Closed">Closed</option>
+                  <option value="Rejected">Rejected (Out of Jurisdiction / Invalid)</option>
+                </select>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="officer-cmp-reassign-dept" class="form-label font-bold">Assign Department</label>
+                <select id="officer-cmp-reassign-dept" class="form-control">
+                  <option value="">-- Keep Current Department --</option>
+                  <option value="Water Supply & Sewerage">Water Supply &amp; Sewerage</option>
+                  <option value="Roads, Bridges & Traffic Infrastructure">Roads &amp; Traffic Infrastructure</option>
+                  <option value="Solid Waste Management & Sanitation">Solid Waste &amp; Sanitation</option>
+                  <option value="Public Health & Vector Control">Public Health &amp; Vector Control</option>
+                  <option value="Street Lighting & Electrical Works">Street Lighting &amp; Electrical</option>
+                  <option value="Town Planning & Building Permissions">Town Planning &amp; Permits</option>
+                  <option value="Horticulture, Parks & Urban Greening">Horticulture &amp; Parks</option>
+                  <option value="General Administration">General Administration</option>
+                </select>
+              </div>
             </div>
 
             <div class="form-group mb-3">

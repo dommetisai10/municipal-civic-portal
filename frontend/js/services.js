@@ -72,7 +72,7 @@ function renderServices(servicesToRender) {
   }
 
   grid.innerHTML = servicesToRender.map(srv => {
-    const isAvailable = srv.availability === "Active";
+    const isAvailable = srv.availability === "Active" || srv.availability === "Available";
     const docsCount = Array.isArray(srv.required_documents) ? srv.required_documents.length : 0;
     
     const docsListHtml = docsCount > 0 
@@ -103,7 +103,7 @@ function renderServices(servicesToRender) {
 
         <div class="service-card-footer">
           ${isAvailable 
-            ? `<a href="apply-service.html?service=${encodeURIComponent(srv.slug)}" class="btn btn-primary btn-block" id="btn-apply-${escapeHtml(srv.slug)}">
+            ? `<a href="apply-service.html?slug=${encodeURIComponent(srv.slug)}" class="btn btn-primary btn-block" id="btn-apply-${escapeHtml(srv.slug)}">
                 Apply Online →
                </a>`
             : `<button class="btn btn-outline btn-block btn-disabled" disabled title="This service is marked as Unavailable and is currently not accepting applications.">

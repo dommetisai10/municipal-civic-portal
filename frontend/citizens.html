@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Citizen Directory Management | Municipal Service Portal</title>
+  <meta name="description" content="Municipal Service Portal Citizen Directory. Manage registered citizens, inspect application histories, and manage civic account access.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dashboard-page admin-body">
+  <!-- Accessibility Skip Link -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Top System Status Bar -->
+  <div class="top-notice-bar admin-notice-bar" role="region" aria-label="Administrative System Notice">
+    <div class="container">
+      <div>
+        <span>🔒 Official Municipal Administration Portal — Strict Clean Data Architecture</span>
+      </div>
+      <div class="db-status-pill" id="db-connection-badge">
+        <span class="status-dot" id="db-status-dot"></span>
+        <span id="db-status-text">Checking database...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header & Navigation -->
+  <header class="site-header admin-header">
+    <div class="container nav-container">
+      <a href="admin-dashboard.html" class="brand-link">
+        <div class="brand-icon admin-brand-icon">MSP</div>
+        <div class="brand-text">
+          <span class="brand-name">Admin Portal</span>
+          <span class="brand-tagline">Municipal Control Center</span>
+        </div>
+      </a>
+
+      <nav class="admin-top-nav">
+        <a href="admin-dashboard.html" class="nav-link">Overview</a>
+        <a href="admin-applications.html" class="nav-link">Applications</a>
+        <a href="admin-complaints.html" class="nav-link">Grievances</a>
+        <a href="service-management.html" class="nav-link">Services</a>
+        <a href="citizens.html" class="nav-link active">Citizens</a>
+        <a href="reports.html" class="nav-link">Reports</a>
+        <a href="admin-audit-logs.html" class="nav-link">Audit Logs</a>
+      </nav>
+
+      <div class="admin-user-nav">
+        <div class="admin-profile-pill">
+          <span class="admin-role-badge">Admin</span>
+          <span class="admin-email-text" id="admin-user-display">Loading officer...</span>
+        </div>
+        <button class="btn btn-sm btn-outline btn-admin-logout" id="btn-admin-logout">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main-content" class="py-6">
+    <div class="container">
+      
+      <!-- Top Banner -->
+      <div class="dashboard-banner mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-neutral-900">Registered Citizen Directory</h1>
+          <p class="text-muted text-sm mt-1">Audit citizen user accounts, view civic submission histories, and manage active access.</p>
+        </div>
+        <div class="clean-data-tag">
+          <span>● Clean Data Architecture (Zero Fabricated Citizens)</span>
+        </div>
+      </div>
+
+      <!-- Search Card -->
+      <div class="card mb-6">
+        <div class="flex gap-4 items-center">
+          <div class="search-input-wrapper flex-1">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input 
+              type="text" 
+              id="citizen-search-input" 
+              class="form-control" 
+              placeholder="Search citizens by name, email, or telephone number..."
+            >
+          </div>
+          <button type="button" class="btn btn-primary" id="btn-search-citizens">Search</button>
+          <button type="button" class="btn btn-outline" id="btn-reset-citizens">Reset</button>
+        </div>
+      </div>
+
+      <!-- Citizens Table Card -->
+      <div class="card">
+        <div class="card-header flex-between mb-4">
+          <div>
+            <h2 class="text-lg font-bold">Registered Citizens</h2>
+            <span class="text-xs text-muted" id="citizens-count-text">Loading registered citizens...</span>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline" id="btn-refresh-citizens">
+            🔄 Refresh
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="citizens-table">
+            <thead>
+              <tr>
+                <th>Citizen Name</th>
+                <th>Email Address</th>
+                <th>Phone Number</th>
+                <th>Applications</th>
+                <th>Grievances</th>
+                <th>Registered Date</th>
+                <th>Account Status</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="citizens-table-body">
+              <tr>
+                <td colspan="8" class="text-center py-6 text-muted">
+                  Loading citizens from MongoDB...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-container" id="citizens-pagination">
+          <span class="pagination-info" id="pagination-info">Showing page 1 of 1</span>
+          <div class="pagination-controls">
+            <button type="button" class="btn btn-sm btn-outline" id="btn-prev-page" disabled>Previous</button>
+            <button type="button" class="btn btn-sm btn-outline" id="btn-next-page" disabled>Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Citizen History Modal -->
+  <div id="citizen-detail-modal" class="modal-backdrop d-none" role="dialog" aria-modal="true" aria-labelledby="citizen-modal-name">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-header">
+        <div>
+          <span class="badge badge-category">Citizen Profile</span>
+          <h2 class="modal-title mt-1" id="citizen-modal-name">Citizen Details</h2>
+          <div class="text-xs text-muted mt-1" id="citizen-modal-meta">Loading details...</div>
+        </div>
+        <button type="button" class="btn-close-modal" id="modal-citizen-close" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <!-- Applications History -->
+        <div class="mb-6">
+          <h3 class="text-base font-bold mb-3">Service Applications on File</h3>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Application ID</th>
+                  <th>Service Requested</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Submission Date</th>
+                </tr>
+              </thead>
+              <tbody id="modal-apps-tbody">
+                <tr><td colspan="5" class="text-center py-4 text-muted">No applications found.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Complaints History -->
+        <div>
+          <h3 class="text-base font-bold mb-3">Grievances Lodged on File</h3>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Complaint ID</th>
+                  <th>Title / Summary</th>
+                  <th>Department</th>
+                  <th>Status</th>
+                  <th>Submission Date</th>
+                </tr>
+              </thead>
+              <tbody id="modal-cmps-tbody">
+                <tr><td colspan="5" class="text-center py-4 text-muted">No grievances found.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="modal-citizen-cancel">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- JavaScript ES Module -->
+  <script type="module" src="js/citizens.js"></script>
+</body>
+</html>

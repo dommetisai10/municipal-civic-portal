@@ -1,6 +1,7 @@
 """Administrative dashboard aggregations and services management routes."""
 
 import logging
+import re
 from datetime import datetime, timezone
 from flask import Blueprint, request, session
 from pymongo.errors import PyMongoError
@@ -229,8 +230,25 @@ def update_service_availability(slug):
 # ADMINISTRATIVE APPLICATION REVIEW WORKFLOWS
 # ==============================================================================
 
-VALID_APPLICATION_STATUSES = ["Submitted", "Under Review", "Action Required", "Approved", "Rejected", "Completed"]
-VALID_COMPLAINT_STATUSES = ["Submitted", "Under Review", "Action Required", "Resolved", "Rejected"]
+VALID_APPLICATION_STATUSES = [
+    "Submitted",
+    "Under Review",
+    "Action Required",
+    "Additional Information Required",
+    "Approved",
+    "Rejected",
+    "Completed"
+]
+VALID_COMPLAINT_STATUSES = [
+    "Submitted",
+    "Under Review",
+    "Assigned",
+    "In Progress",
+    "Action Required",
+    "Resolved",
+    "Closed",
+    "Rejected"
+]
 
 
 @admin_portal_bp.route("/applications", methods=["GET"])
@@ -814,5 +832,694 @@ def get_admin_audit_log_detail(log_id):
 
     except PyMongoError as exc:
         return error_response(code="DATABASE_ERROR", message=str(exc), status_code=503)
+
+
+# ==============================================================================
+# GRIEVANCE ASSIGNMENT WORKFLOW
+# ==============================================================================
+
+@admin_portal_bp.route("/complaints/<complaint_id>/assign", methods=["PATCH"])
+@admin_required
+@csrf_protect
+def assign_complaint(complaint_id):
+    """
+    Assigns a grievance to a specific department or officer, updates status to 'Assigned',
+    records remarks, dispatches a citizen notification, and logs an audit trail.
+    """
+    try:
+        body = request.get_json(silent=True) or {}
+        department = body.get("department", "").strip()
+        remarks = body.get("remarks", "").strip()
+
+        if not department:
+            return error_response(
+                code="DEPARTMENT_REQUIRED",
+                message="Target department is required for grievance assignment.",
+                fields={"department": "Field is required."},
+                status_code=400
+            )
+
+        cmps_col = get_collection("complaints")
+        doc = cmps_col.find_one({"complaint_id": complaint_id})
+        if not doc:
+            return error_response(code="COMPLAINT_NOT_FOUND", message="Complaint record not found.", status_code=404)
+
+        old_dept = doc.get("department", "Unassigned")
+        old_status = doc.get("status", "Submitted")
+        new_status = "Assigned"
+        now = datetime.now(timezone.utc)
+        note = remarks or f"Assigned to {department}"
+
+        history_entry = {
+            "status": new_status,
+            "changed_at": now,
+            "changed_by": str(session["user_id"]),
+            "role": "admin",
+            "remarks": f"Assigned to {department}. {remarks}".strip()
+        }
+
+        res = cmps_col.update_one(
+            {"complaint_id": complaint_id},
+            {
+                "$set": {
+                    "department": department,
+                    "status": new_status,
+                    "updated_at": now
+                },
+                "$push": {"status_history": history_entry}
+            }
+        )
+        if not res.acknowledged:
+            return error_response(code="DATABASE_ERROR", message="Failed to assign grievance.", status_code=500)
+
+        # Notify citizen
+        notif_col = get_collection("notifications")
+        notif_col.insert_one({
+            "user_id": doc["user_id"],
+            "title": "Grievance Assigned",
+            "message": f"Your complaint {complaint_id} has been assigned to '{department}'. Remarks: {note}",
+            "link": "/user-dashboard.html",
+            "is_read": False,
+            "created_at": now
+        })
+
+        # Audit log
+        log_audit(
+            actor_id=session.get("user_id"),
+            actor_role="admin",
+            action="COMPLAINT_ASSIGNED",
+            target_collection="complaints",
+            target_id=complaint_id,
+            before_after_summary={
+                "complaint_id": complaint_id,
+                "before_department": old_dept,
+                "after_department": department,
+                "before_status": old_status,
+                "after_status": new_status,
+                "remarks": note
+            },
+            ip=request.remote_addr
+        )
+
+        return success_response(
+            data={
+                "complaint_id": complaint_id,
+                "department": department,
+                "status": new_status,
+                "remarks": note,
+                "updated_at": now.isoformat(),
+                "message": f"Complaint {complaint_id} assigned to {department}."
+            }
+        )
+    except PyMongoError as exc:
+        return error_response(code="DATABASE_ERROR", message=str(exc), status_code=503)
+
+
+# ==============================================================================
+# SERVICE MANAGEMENT CRUD
+# ==============================================================================
+
+def slugify(text):
+    text = re.sub(r"[^\w\s-]", "", text.lower())
+    return re.sub(r"[-\s]+", "-", text).strip("-")
+
+
+@admin_portal_bp.route("/services", methods=["POST"])
+@admin_required
+@csrf_protect
+def create_service():
+    """
+    Creates a new municipal service in the catalog.
+    """
+    try:
+        body = request.get_json(silent=True) or {}
+        name = body.get("name", "").strip()
+        category = body.get("category", "").strip()
+        description = body.get("description", "").strip()
+        availability = body.get("availability", "Available").strip()
+        required_docs = body.get("required_documents", [])
+        form_schema = body.get("form_schema", [])
+        processing_days = body.get("processing_days", 7)
+        fee = body.get("fee", 0)
+
+        if not name or len(name) < 3:
+            return error_response(code="VALIDATION_ERROR", message="Service name is required (min 3 chars).", status_code=400)
+        if not category:
+            return error_response(code="VALIDATION_ERROR", message="Category is required.", status_code=400)
+        if not description:
+            return error_response(code="VALIDATION_ERROR", message="Description is required.", status_code=400)
+
+        slug = body.get("slug", "").strip() or slugify(name)
+        services_col = get_collection("services")
+        if services_col.find_one({"slug": slug}):
+            return error_response(code="SLUG_EXISTS", message=f"A service with slug '{slug}' already exists.", status_code=400)
+
+        now = datetime.now(timezone.utc)
+        doc = {
+            "slug": slug,
+            "name": name,
+            "category": category,
+            "description": description,
+            "availability": availability if availability in ["Available", "Active", "Unavailable"] else "Available",
+            "required_documents": required_docs if isinstance(required_docs, list) else [],
+            "form_schema": form_schema if isinstance(form_schema, list) else [],
+            "processing_days": processing_days,
+            "fee": fee,
+            "created_at": now,
+            "updated_at": now
+        }
+        res = services_col.insert_one(doc)
+        if not res.acknowledged:
+            return error_response(code="DATABASE_ERROR", message="Failed to create service.", status_code=500)
+
+        log_audit(
+            actor_id=session.get("user_id"),
+            actor_role="admin",
+            action="SERVICE_CREATED",
+            target_collection="services",
+            target_id=slug,
+            before_after_summary={"slug": slug, "name": name, "category": category},
+            ip=request.remote_addr
+        )
+
+        return success_response(data={"slug": slug, "name": name, "message": f"Service '{name}' created successfully."}, status_code=201)
+    except PyMongoError as exc:
+        return error_response(code="DATABASE_ERROR", message=str(exc), status_code=503)
+
+
+@admin_portal_bp.route("/services/<slug>", methods=["PUT"])
+@admin_required
+@csrf_protect
+def update_service(slug):
+    """
+    Updates an existing municipal service definition.
+    """
+    try:
+        body = request.get_json(silent=True) or {}
+        services_col = get_collection("services")
+        service = services_col.find_one({"slug": slug})
+        if not service:
+            return error_response(code="SERVICE_NOT_FOUND", message=f"Service '{slug}' was not found.", status_code=404)
+
+        update_fields = {}
+        if "name" in body and body["name"].strip():
+            update_fields["name"] = body["name"].strip()
+        if "category" in body and body["category"].strip():
+            update_fields["category"] = body["category"].strip()
+        if "description" in body and body["description"].strip():
+            update_fields["description"] = body["description"].strip()
+        if "availability" in body and body["availability"].strip() in ["Available", "Active", "Unavailable"]:
+            update_fields["availability"] = body["availability"].strip()
+        if "required_documents" in body and isinstance(body["required_documents"], list):
+            update_fields["required_documents"] = body["required_documents"]
+        if "form_schema" in body and isinstance(body["form_schema"], list):
+            update_fields["form_schema"] = body["form_schema"]
+        if "processing_days" in body:
+            update_fields["processing_days"] = body["processing_days"]
+        if "fee" in body:
+            update_fields["fee"] = body["fee"]
+
+        update_fields["updated_at"] = datetime.now(timezone.utc)
+
+        services_col.update_one({"slug": slug}, {"$set": update_fields})
+
+        log_audit(
+            actor_id=session.get("user_id"),
+            actor_role="admin",
+            action="SERVICE_UPDATED",
+            target_collection="services",
+            target_id=slug,
+            before_after_summary={"slug": slug, "updated_fields": list(update_fields.keys())},
+            ip=request.remote_addr
+        )
+
+        return success_response(data={"slug": slug, "message": f"Service '{slug}' updated successfully."})
+    except PyMongoError as exc:
+        return error_response(code="DATABASE_ERROR", message=str(exc), status_code=503)
+
+
+@admin_portal_bp.route("/services/<slug>", methods=["DELETE"])
+@admin_required
+@csrf_protect
+def delete_service(slug):
+    """
+    Deletes a service if there are no existing applications for it.
+    """
+    try:
+        services_col = get_collection("services")
+        apps_col = get_collection("applications")
+
+        service = services_col.find_one({"slug": slug})
+        if not service:
+            return error_response(code="SERVICE_NOT_FOUND", message=f"Service '{slug}' not found.", status_code=404)
+
+        existing_apps = apps_col.count_documents({"service_slug": slug})
+        if existing_apps > 0:
+            return error_response(
+                code="SERVICE_HAS_APPLICATIONS",
+                message=f"Cannot delete service '{slug}' because it has {existing_apps} citizen applications on record. Mark it as 'Unavailable' instead.",
+                status_code=400
+            )
+
+        services_col.delete_one({"slug": slug})
+
+        log_audit(
+            actor_id=session.get("user_id"),
+            actor_role="admin",
+            action="SERVICE_DELETED",
+            target_collection="services",
+            target_id=slug,
+            before_after_summary={"slug": slug, "name": service.get("name")},
+            ip=request.remote_addr
+        )
+
+        return success_response(data={"slug": slug, "message": f"Service '{service.get('name')}' deleted successfully."})
+    except PyMongoError as exc:
+        return error_response(code="DATABASE_ERROR", message=str(exc), status_code=503)
+
+
+# ==============================================================================
+# DEPARTMENT MANAGEMENT
+# ==============================================================================
+
+DEFAULT_MUNICIPAL_DEPARTMENTS = [
+    {"name": "Water Supply & Sewerage", "description": "Drinking water supply, pipeline repairs, sewer connections, and drainage."},
+    {"name": "Roads, Bridges & Traffic Infrastructure", "description": "Road maintenance, pothole repairs, street signaling, and footpath upkeep."},
+    {"name": "Solid Waste Management & Sanitation", "description": "Door-to-door garbage collection, street sweeping, dump yards, and sanitation."},
+    {"name": "Public Health & Vector Control", "description": "Mosquito control, public health clinics, food safety inspections, and sanitization."},
+    {"name": "Town Planning & Building Permissions", "description": "Building permits, occupancy certificates, zoning compliance, and encroachment removal."},
+    {"name": "Revenue, Property Tax & Licensing", "description": "Property tax assessment, trade licenses, municipal asset leasing, and civic revenues."},
+    {"name": "Street Lighting & Electrical Works", "description": "LED streetlight installation, faulty light maintenance, and pole electrical repairs."},
+    {"name": "Horticulture, Parks & Urban Greening", "description": "Public park maintenance, tree pruning, green corridors, and civic nurseries."},
+    {"name": "General Administration", "description": "Citizen grievance redressal, RTI compliance, public inquiries, and administrative support."}
+]
+
+
+@admin_portal_bp.route("/departments", methods=["GET"])
+@admin_required
+def get_admin_departments():
+    """
+    Returns list of municipal departments. Auto-seeds default departments if collection is empty.
+    """
+    try:
+        dept_col = get_collection("departments")
+        if dept_col.count_documents({}) == 0:
+            now = datetime.now(timezone.utc)
+            for d in DEFAULT_MUNICIPAL_DEPARTMENTS:
+                dept_col.insert_one({
+                    "name": d["name"],
+                    "description": d["description"],
+                    "created_at": now
+                })
+
+        departments = list(dept_col.find({}, {"_id": 0}).sort("name", 1))
+        return success_response(data=departments)
+    except PyMongoError as exc:
+        return error_response(code="DATABASE_ERROR", message=str(exc), status_code=503)
+
+
+@admin_portal_bp.route("/departments", methods=["POST"])
+@admin_required
+@csrf_protect
+def add_admin_department():
+    """
+    Adds a new administrative department.
+    """
+    try:
+        body = request.get_json(silent=True) or {}
+        name = body.get("name", "").strip()
+        description = body.get("description", "").strip()
+
+        if not name or len(name) < 3:
+            return error_response(code="VALIDATION_ERROR", message="Department name is required (min 3 chars).", status_code=400)
+
+        dept_col = get_collection("departments")
+        if dept_col.find_one({"name": {"$regex": f"^{re.escape(name)}$", "$options": "i"}}):
+            return error_response(code="DEPARTMENT_EXISTS", message=f"Department '{name}' already exists.", status_code=400)
+
+        now = datetime.now(timezone.utc)
+        doc = {
+            "name": name,
+            "description": description or f"{name} Department",
+            "created_at": now
+        }
+        dept_col.insert_one(doc)
+
+        log_audit(
+            actor_id=session.get("user_id"),
+            actor_role="admin",
+            action="DEPARTMENT_CREATED",
+            target_collection="departments",
+            target_id=name,
+            before_after_summary={"name": name, "description": description},
+            ip=request.remote_addr
+        )
+
+        return success_response(data={"name": name, "description": description, "message": f"Department '{name}' created."}, status_code=201)
+    except PyMongoError as exc:
+        return error_response(code="DATABASE_ERROR", message=str(exc), status_code=503)
+
+
+@admin_portal_bp.route("/departments/<name>", methods=["DELETE"])
+@admin_required
+@csrf_protect
+def delete_admin_department(name):
+    """
+    Deletes a municipal department if no complaints are currently assigned to it.
+    """
+    try:
+        dept_col = get_collection("departments")
+        cmps_col = get_collection("complaints")
+
+        active_cmps = cmps_col.count_documents({"department": name, "status": {"$in": ["Submitted", "Under Review", "Assigned", "In Progress"]}})
+        if active_cmps > 0:
+            return error_response(
+                code="DEPARTMENT_HAS_ACTIVE_COMPLAINTS",
+                message=f"Cannot delete department '{name}' because it has {active_cmps} active grievances assigned to it.",
+                status_code=400
+            )
+
+        res = dept_col.delete_one({"name": name})
+        if res.deleted_count == 0:
+            return error_response(code="DEPARTMENT_NOT_FOUND", message=f"Department '{name}' was not found.", status_code=404)
+
+        log_audit(
+            actor_id=session.get("user_id"),
+            actor_role="admin",
+            action="DEPARTMENT_DELETED",
+            target_collection="departments",
+            target_id=name,
+            before_after_summary={"name": name},
+            ip=request.remote_addr
+        )
+
+        return success_response(data={"name": name, "message": f"Department '{name}' deleted."})
+    except PyMongoError as exc:
+        return error_response(code="DATABASE_ERROR", message=str(exc), status_code=503)
+
+
+# ==============================================================================
+# CITIZEN MANAGEMENT
+# ==============================================================================
+
+@admin_portal_bp.route("/citizens", methods=["GET"])
+@admin_required
+def list_admin_citizens():
+    """
+    Lists registered citizens with search, pagination, and application/complaint counts.
+    """
+    try:
+        users_col = get_collection("users")
+        apps_col = get_collection("applications")
+        cmps_col = get_collection("complaints")
+
+        query = {"role": "citizen"}
+        search_q = request.args.get("q", "").strip()
+        if search_q:
+            query["$or"] = [
+                {"name": {"$regex": search_q, "$options": "i"}},
+                {"email": {"$regex": search_q, "$options": "i"}},
+                {"phone": {"$regex": search_q, "$options": "i"}}
+            ]
+
+        total_records = users_col.count_documents(query)
+        try:
+            page = max(1, int(request.args.get("page", 1)))
+        except (ValueError, TypeError):
+            page = 1
+
+        try:
+            limit = min(100, max(1, int(request.args.get("limit", 20))))
+        except (ValueError, TypeError):
+            limit = 20
+
+        total_pages = max(1, (total_records + limit - 1) // limit) if total_records > 0 else 1
+        skip = (page - 1) * limit
+
+        cursor = users_col.find(query).sort("created_at", -1).skip(skip).limit(limit)
+
+        citizens = []
+        for user in cursor:
+            user_id = user["_id"]
+            user_id_str = str(user_id)
+            app_count = apps_col.count_documents({"user_id": user_id})
+            cmp_count = cmps_col.count_documents({"user_id": user_id})
+            created_at_val = user.get("created_at")
+            created_at_str = created_at_val.isoformat() if isinstance(created_at_val, datetime) else str(created_at_val or "")
+
+            citizens.append({
+                "id": user_id_str,
+                "name": user.get("name", "Citizen"),
+                "email": user.get("email", ""),
+                "phone": user.get("phone", ""),
+                "address": user.get("address", ""),
+                "is_active": user.get("is_active", True),
+                "applications_count": app_count,
+                "complaints_count": cmp_count,
+                "created_at": created_at_str
+            })
+
+        return success_response(data={
+            "citizens": citizens,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total_records": total_records,
+                "total_pages": total_pages
+            }
+        })
+    except PyMongoError as exc:
+        return error_response(code="DATABASE_ERROR", message=str(exc), status_code=503)
+
+
+@admin_portal_bp.route("/citizens/<citizen_id>", methods=["GET"])
+@admin_required
+def get_admin_citizen_detail(citizen_id):
+    """
+    Retrieves full profile of a citizen including all their applications and complaints.
+    """
+    try:
+        users_col = get_collection("users")
+        apps_col = get_collection("applications")
+        cmps_col = get_collection("complaints")
+
+        try:
+            obj_id = ObjectId(citizen_id)
+        except Exception:
+            return error_response(code="INVALID_ID", message="Invalid citizen ID format.", status_code=400)
+
+        user = users_col.find_one({"_id": obj_id, "role": "citizen"})
+        if not user:
+            return error_response(code="USER_NOT_FOUND", message="Citizen record not found.", status_code=404)
+
+        user_apps = list(apps_col.find({"user_id": obj_id}).sort("created_at", -1))
+        user_cmps = list(cmps_col.find({"user_id": obj_id}).sort("created_at", -1))
+
+        applications = []
+        for app in user_apps:
+            applications.append({
+                "application_id": app.get("application_id"),
+                "service_name": app.get("service_name"),
+                "category": app.get("category"),
+                "status": app.get("status"),
+                "created_at": app.get("created_at").isoformat() if isinstance(app.get("created_at"), datetime) else str(app.get("created_at"))
+            })
+
+        complaints = []
+        for cmp in user_cmps:
+            complaints.append({
+                "complaint_id": cmp.get("complaint_id"),
+                "title": cmp.get("title"),
+                "department": cmp.get("department"),
+                "status": cmp.get("status"),
+                "created_at": cmp.get("created_at").isoformat() if isinstance(cmp.get("created_at"), datetime) else str(cmp.get("created_at"))
+            })
+
+        created_at_val = user.get("created_at")
+        created_at_str = created_at_val.isoformat() if isinstance(created_at_val, datetime) else str(created_at_val or "")
+
+        return success_response(data={
+            "id": str(user["_id"]),
+            "name": user.get("name"),
+            "email": user.get("email"),
+            "phone": user.get("phone", ""),
+            "address": user.get("address", ""),
+            "is_active": user.get("is_active", True),
+            "created_at": created_at_str,
+            "applications": applications,
+            "complaints": complaints
+        })
+    except PyMongoError as exc:
+        return error_response(code="DATABASE_ERROR", message=str(exc), status_code=503)
+
+
+@admin_portal_bp.route("/citizens/<citizen_id>/status", methods=["PATCH"])
+@admin_required
+@csrf_protect
+def toggle_citizen_status(citizen_id):
+    """
+    Activates or deactivates a citizen account.
+    """
+    try:
+        try:
+            obj_id = ObjectId(citizen_id)
+        except Exception:
+            return error_response(code="INVALID_ID", message="Invalid citizen ID format.", status_code=400)
+
+        body = request.get_json(silent=True) or {}
+        if "is_active" not in body:
+            return error_response(code="VALIDATION_ERROR", message="Field 'is_active' (boolean) is required.", status_code=400)
+
+        is_active = bool(body["is_active"])
+
+        users_col = get_collection("users")
+        user = users_col.find_one({"_id": obj_id, "role": "citizen"})
+        if not user:
+            return error_response(code="USER_NOT_FOUND", message="Citizen record not found.", status_code=404)
+
+        old_status = user.get("is_active", True)
+        users_col.update_one({"_id": obj_id}, {"$set": {"is_active": is_active, "updated_at": datetime.now(timezone.utc)}})
+
+        log_audit(
+            actor_id=session.get("user_id"),
+            actor_role="admin",
+            action="CITIZEN_STATUS_TOGGLED",
+            target_collection="users",
+            target_id=citizen_id,
+            before_after_summary={"citizen_id": citizen_id, "before": old_status, "after": is_active},
+            ip=request.remote_addr
+        )
+
+        return success_response(data={
+            "id": citizen_id,
+            "is_active": is_active,
+            "message": f"Citizen account is now {'active' if is_active else 'deactivated'}."
+        })
+    except PyMongoError as exc:
+        return error_response(code="DATABASE_ERROR", message=str(exc), status_code=503)
+
+
+# ==============================================================================
+# REPORTS & ANALYTICS
+# ==============================================================================
+
+@admin_portal_bp.route("/reports", methods=["GET"])
+@admin_required
+def get_admin_reports():
+    """
+    Aggregated statistical reports across services, applications, and complaints.
+    """
+    try:
+        apps_col = get_collection("applications")
+        cmps_col = get_collection("complaints")
+        services_col = get_collection("services")
+
+        # 1. Applications by Service
+        apps_by_service_pipeline = [
+            {"$group": {"_id": "$service_name", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}}
+        ]
+        apps_by_service = [
+            {"service": item["_id"] or "Unknown", "count": item["count"]}
+            for item in apps_col.aggregate(apps_by_service_pipeline)
+        ]
+
+        # 2. Applications by Status
+        apps_by_status_pipeline = [
+            {"$group": {"_id": "$status", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}}
+        ]
+        apps_by_status = [
+            {"status": item["_id"] or "Unknown", "count": item["count"]}
+            for item in apps_col.aggregate(apps_by_status_pipeline)
+        ]
+
+        # 3. Complaints by Department
+        cmps_by_dept_pipeline = [
+            {"$group": {"_id": "$department", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}}
+        ]
+        cmps_by_department = [
+            {"department": item["_id"] or "General", "count": item["count"]}
+            for item in cmps_col.aggregate(cmps_by_dept_pipeline)
+        ]
+
+        # 4. Complaints by Status
+        cmps_by_status_pipeline = [
+            {"$group": {"_id": "$status", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}}
+        ]
+        cmps_by_status = [
+            {"status": item["_id"] or "Unknown", "count": item["count"]}
+            for item in cmps_col.aggregate(cmps_by_status_pipeline)
+        ]
+
+        # 5. Monthly Trend
+        monthly_apps_pipeline = [
+            {
+                "$match": {
+                    "created_at": {"$type": "date"}
+                }
+            },
+            {
+                "$group": {
+                    "_id": {"$dateToString": {"format": "%Y-%m", "date": "$created_at"}},
+                    "count": {"$sum": 1}
+                }
+            },
+            {"$sort": {"_id": 1}}
+        ]
+        monthly_apps = {item["_id"]: item["count"] for item in apps_col.aggregate(monthly_apps_pipeline)}
+
+        monthly_cmps_pipeline = [
+            {
+                "$match": {
+                    "created_at": {"$type": "date"}
+                }
+            },
+            {
+                "$group": {
+                    "_id": {"$dateToString": {"format": "%Y-%m", "date": "$created_at"}},
+                    "count": {"$sum": 1}
+                }
+            },
+            {"$sort": {"_id": 1}}
+        ]
+        monthly_cmps = {item["_id"]: item["count"] for item in cmps_col.aggregate(monthly_cmps_pipeline)}
+
+        all_months = sorted(set(list(monthly_apps.keys()) + list(monthly_cmps.keys())))
+        trend_data = [
+            {
+                "month": m,
+                "applications": monthly_apps.get(m, 0),
+                "complaints": monthly_cmps.get(m, 0)
+            }
+            for m in all_months
+        ]
+
+        # 6. Overall Summary
+        total_apps = apps_col.count_documents({})
+        total_cmps = cmps_col.count_documents({})
+        approved_apps = apps_col.count_documents({"status": "Approved"})
+        resolved_cmps = cmps_col.count_documents({"status": "Resolved"})
+        active_services = services_col.count_documents({"availability": {"$in": ["Available", "Active"]}})
+
+        return success_response(data={
+            "summary": {
+                "total_applications": total_apps,
+                "approved_applications": approved_apps,
+                "total_complaints": total_cmps,
+                "resolved_complaints": resolved_cmps,
+                "active_services": active_services
+            },
+            "applications_by_service": apps_by_service,
+            "applications_by_status": apps_by_status,
+            "complaints_by_department": cmps_by_department,
+            "complaints_by_status": cmps_by_status,
+            "monthly_trends": trend_data
+        })
+    except PyMongoError as exc:
+        return error_response(code="DATABASE_ERROR", message=str(exc), status_code=503)
+
 
 

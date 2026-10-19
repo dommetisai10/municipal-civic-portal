@@ -257,3 +257,127 @@ def test_admin_toggle_service_invalid_value(client):
     assert res.status_code == 400
     data = res.get_json()
     assert data["error"]["code"] == "INVALID_AVAILABILITY"
+
+
+def test_admin_assign_complaint(client):
+    """Admin can assign a grievance to a department with remarks."""
+    with client.session_transaction() as sess:
+        sess["user_id"] = str(ObjectId())
+        sess["role"] = "admin"
+        sess["csrf_token"] = "valid_csrf_token"
+
+    mock_cmp = {
+        "_id": ObjectId(),
+        "complaint_id": "CMP-20261019-9999",
+        "user_id": ObjectId(),
+        "department": "Sanitation & Waste Management",
+        "status": "Submitted"
+    }
+
+    mock_cmps = MagicMock()
+    mock_cmps.find_one.return_value = mock_cmp
+    mock_cmps.update_one.return_value = MagicMock(acknowledged=True)
+
+    mock_notif = MagicMock()
+    mock_notif.insert_one.return_value = MagicMock(acknowledged=True)
+
+    def col_side_effect(name):
+        if name == "complaints":
+            return mock_cmps
+        if name == "notifications":
+            return mock_notif
+        return MagicMock()
+
+    with patch("backend.routes.admin_portal.get_collection", side_effect=col_side_effect), \
+         patch("backend.routes.admin_portal.log_audit") as mock_audit:
+
+        res = client.patch(
+            "/api/admin/complaints/CMP-20261019-9999/assign",
+            json={"department": "Roads & Infrastructure", "remarks": "Assigned to Ward 3 field team"},
+            headers={"X-CSRF-Token": "valid_csrf_token"}
+        )
+        assert res.status_code == 200
+        data = res.get_json()
+        assert data["success"] is True
+        assert data["data"]["status"] == "Assigned"
+        assert data["data"]["department"] == "Roads & Infrastructure"
+        assert mock_cmps.update_one.called
+        assert mock_notif.insert_one.called
+        assert mock_audit.called
+
+
+def test_admin_service_crud(client):
+    """Admin can create, update, and delete catalog services."""
+    with client.session_transaction() as sess:
+        sess["user_id"] = str(ObjectId())
+        sess["role"] = "admin"
+        sess["csrf_token"] = "valid_csrf_token"
+
+    mock_services = MagicMock()
+    mock_services.find_one.return_value = None
+    mock_services.insert_one.return_value = MagicMock(acknowledged=True)
+    mock_apps = MagicMock()
+    mock_apps.count_documents.return_value = 0
+
+    def col_side_effect(name):
+        if name == "services":
+            return mock_services
+        if name == "applications":
+            return mock_apps
+        return MagicMock()
+
+    with patch("backend.routes.admin_portal.get_collection", side_effect=col_side_effect), \
+         patch("backend.routes.admin_portal.log_audit"):
+
+        # Create
+        res = client.post(
+            "/api/admin/services",
+            json={
+                "name": "Tree Trimming Clearance",
+                "category": "Environment",
+                "description": "Permission to trim overgrown branches.",
+                "availability": "Available"
+            },
+            headers={"X-CSRF-Token": "valid_csrf_token"}
+        )
+        assert res.status_code == 201
+        data = res.get_json()
+        assert data["success"] is True
+        assert data["data"]["slug"] == "tree-trimming-clearance"
+
+
+def test_admin_reports_endpoint(client):
+    """Admin can fetch aggregated reports for charts and metrics."""
+    with client.session_transaction() as sess:
+        sess["user_id"] = str(ObjectId())
+        sess["role"] = "admin"
+
+    mock_apps = MagicMock()
+    mock_apps.aggregate.return_value = [{"_id": "Birth Certificate", "count": 10}]
+    mock_apps.count_documents.return_value = 10
+
+    mock_cmps = MagicMock()
+    mock_cmps.aggregate.return_value = [{"_id": "Water Supply", "count": 5}]
+    mock_cmps.count_documents.return_value = 5
+
+    mock_services = MagicMock()
+    mock_services.count_documents.return_value = 12
+
+    def col_side_effect(name):
+        if name == "applications":
+            return mock_apps
+        if name == "complaints":
+            return mock_cmps
+        if name == "services":
+            return mock_services
+        return MagicMock()
+
+    with patch("backend.routes.admin_portal.get_collection", side_effect=col_side_effect):
+        res = client.get("/api/admin/reports")
+        assert res.status_code == 200
+        data = res.get_json()
+        assert data["success"] is True
+        assert "applications_by_service" in data["data"]
+        assert "complaints_by_department" in data["data"]
+        assert "summary" in data["data"]
+
