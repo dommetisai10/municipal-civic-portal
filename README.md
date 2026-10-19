@@ -123,10 +123,11 @@ cp backend\.env.example backend\.env
 
 ### 3. Initialize Database & Static Catalog
 ```powershell
-# Create unique indexes across all collections
+# Create unique and compound indexes across all 7 collections
 python backend\scripts\init_db.py
+# Alternatively: python backend\scripts\create_indexes.py
 
-# Seed initial services catalog definitions (all default to 'Unavailable')
+# Seed initial services catalog definitions (all 12 services set to 'Available')
 python backend\scripts\init_services.py
 ```
 
