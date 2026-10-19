@@ -78,15 +78,19 @@ def submit_complaint():
     - Writes acknowledged record, audit trail, and citizen notification.
     """
     try:
+        data = request.get_json(silent=True) if request.is_json else request.form
+        if not data:
+            data = request.form
+
         # 1. Validate Title
-        raw_title = request.form.get("title")
+        raw_title = data.get("title")
         ok, title = sanitize_string(raw_title, field_name="Title", min_length=5, max_length=120, required=True)
         if not ok:
             return error_response(code="VALIDATION_ERROR", message=title, fields={"title": title}, status_code=400)
 
         # 2. Validate Category / Department
-        raw_cat = request.form.get("category", "").strip()
-        raw_dept = request.form.get("department", "").strip()
+        raw_cat = str(data.get("category") or "").strip()
+        raw_dept = str(data.get("department") or "").strip()
         chosen = raw_cat or raw_dept
 
         all_valid_options = COMPLAINT_CATEGORIES + MUNICIPAL_DEPARTMENTS
@@ -103,26 +107,26 @@ def submit_complaint():
         department = chosen
 
         # 3. Validate Description
-        raw_desc = request.form.get("description")
+        raw_desc = data.get("description")
         ok, description = sanitize_string(raw_desc, field_name="Description", min_length=15, max_length=2000, required=True)
         if not ok:
             return error_response(code="VALIDATION_ERROR", message=description, fields={"description": description}, status_code=400)
 
         # 4. Validate Location / Address
-        raw_loc = request.form.get("location")
+        raw_loc = data.get("location") or data.get("ward")
         ok, location = sanitize_string(raw_loc, field_name="Location", min_length=5, max_length=300, required=True)
         if not ok:
             return error_response(code="VALIDATION_ERROR", message=location, fields={"location": location}, status_code=400)
 
         # 4b. Optional Landmark
-        raw_landmark = request.form.get("landmark")
+        raw_landmark = data.get("landmark")
         ok_lm, landmark = sanitize_string(raw_landmark, field_name="Landmark", min_length=0, max_length=150, required=False)
         landmark_val = landmark if (ok_lm and landmark) else None
 
         # 5. Optional GPS Coordinates
         coordinates = None
-        lat_str = request.form.get("latitude")
-        lng_str = request.form.get("longitude")
+        lat_str = data.get("latitude")
+        lng_str = data.get("longitude")
         if lat_str and lng_str:
             try:
                 lat = float(lat_str)

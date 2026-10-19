@@ -925,6 +925,7 @@ def assign_complaint(complaint_id):
             data={
                 "complaint_id": complaint_id,
                 "department": department,
+                "assigned_department": department,
                 "status": new_status,
                 "remarks": note,
                 "updated_at": now.isoformat(),

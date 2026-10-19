@@ -87,6 +87,7 @@ def track_status(record_id=None):
         if record_type == "Application":
             public_data = {
                 "record_id": doc.get("application_id"),
+                "reference_id": doc.get("application_id"),
                 "record_type": "Application",
                 "title": doc.get("service_name", "Municipal Service"),
                 "department": doc.get("category", "General"),
@@ -100,6 +101,7 @@ def track_status(record_id=None):
         else:
             public_data = {
                 "record_id": doc.get("complaint_id"),
+                "reference_id": doc.get("complaint_id"),
                 "record_type": "Complaint",
                 "title": doc.get("title", "Civic Grievance"),
                 "department": doc.get("department", "General"),
