@@ -11,6 +11,7 @@ dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
 
 
 @dashboard_bp.route("/user", methods=["GET"])
+@dashboard_bp.route("/stats", methods=["GET"])
 @login_required
 @citizen_required
 def get_citizen_dashboard():

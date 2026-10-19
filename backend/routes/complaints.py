@@ -241,6 +241,7 @@ def submit_complaint():
         return error_response(code="INTERNAL_SERVER_ERROR", message=f"An error occurred: {str(exc)}", status_code=500)
 
 
+@complaints_bp.route("/complaints", methods=["GET"])
 @complaints_bp.route("/complaints/my", methods=["GET"])
 @citizen_required
 def get_my_complaints():

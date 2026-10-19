@@ -41,7 +41,13 @@ def submit_application():
     - Writes acknowledged record, audit trail, and citizen notification.
     """
     try:
-        service_slug = request.form.get("service_slug", "").strip()
+        body = {}
+        if request.is_json:
+            body = request.get_json(silent=True) or {}
+            service_slug = body.get("service_slug", "").strip()
+        else:
+            service_slug = request.form.get("service_slug", "").strip()
+
         if not service_slug:
             return error_response(
                 code="SERVICE_SLUG_REQUIRED",
@@ -69,7 +75,16 @@ def submit_application():
 
         # 3. Extract and Parse Form Data
         form_data = {}
-        if "form_data" in request.form:
+        if request.is_json:
+            raw_fd = body.get("form_data", {})
+            if isinstance(raw_fd, str):
+                try:
+                    form_data = json.loads(raw_fd)
+                except (ValueError, TypeError):
+                    form_data = {}
+            elif isinstance(raw_fd, dict):
+                form_data = raw_fd
+        elif "form_data" in request.form:
             try:
                 form_data = json.loads(request.form.get("form_data", "{}"))
             except (ValueError, TypeError):
@@ -235,6 +250,7 @@ def submit_application():
         )
 
 
+@applications_bp.route("/applications", methods=["GET"])
 @applications_bp.route("/applications/my", methods=["GET"])
 @citizen_required
 def get_my_applications():
