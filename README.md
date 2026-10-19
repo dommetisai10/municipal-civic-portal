@@ -138,22 +138,27 @@ python backend\scripts\create_admin.py
 
 ### 5. Run the Application
 ```powershell
-# Run backend development server (serves both API & Frontend)
-python -m backend.app
+# Run the application server (serves both API & Frontend)
+python run.py
 ```
 Open your browser to:
 - **Citizen Portal**: `http://127.0.0.1:5000/`
 - **Services Catalog**: `http://127.0.0.1:5000/services.html`
 - **Submit Complaint**: `http://127.0.0.1:5000/submit-complaint.html`
 - **Track Status**: `http://127.0.0.1:5000/track-status.html`
+- **Citizen Dashboard**: `http://127.0.0.1:5000/user-dashboard.html`
 - **Admin Portal**: `http://127.0.0.1:5000/admin-login.html`
+- **Admin Dashboard**: `http://127.0.0.1:5000/admin-dashboard.html`
+- **Service Management**: `http://127.0.0.1:5000/service-management.html`
+- **Citizen Directory**: `http://127.0.0.1:5000/citizens.html`
+- **Reports & Analytics**: `http://127.0.0.1:5000/reports.html`
 
 ### 6. Run Automated Test Suite
 ```powershell
-# Run the complete test suite across all 14 test modules
+# Run the complete test suite across all 12 test modules
 pytest -v backend\tests
 ```
-All **91 automated test cases** cover:
+All **99 automated test cases** cover:
 - Authentication, session security, CSRF protection, and bcrypt hashing
 - Application schema validation and magic-byte document upload rejection
 - Grievance reporting, GPS tracking, and image security

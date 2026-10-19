@@ -133,6 +133,19 @@ def create_app(config_class=Config):
     def serve_index():
         return app.send_static_file("index.html")
 
+    @app.route("/<path:page>")
+    def serve_page(page):
+        clean_page = page.strip("/")
+        if clean_page.startswith("api"):
+            return handle_not_found(Exception("The requested API resource was not found."))
+        candidate_html = frontend_dir / f"{clean_page}.html"
+        if candidate_html.is_file():
+            return app.send_static_file(f"{clean_page}.html")
+        candidate_direct = frontend_dir / clean_page
+        if candidate_direct.is_file():
+            return app.send_static_file(clean_page)
+        return handle_not_found(Exception("The requested page was not found."))
+
     return app
 
 
