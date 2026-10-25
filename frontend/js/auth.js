@@ -1,16 +1,45 @@
 /**
  * Authentication Management Module (ES Module)
- * Handles client-side validation, CSRF auto-inclusion, and session establishment.
+ * Handles client-side validation, CSRF auto-inclusion, persistent token caching,
+ * and post-login redirection to originally requested destination.
  */
 
-import { apiRequest, showToast, getAuthUser } from './api.js';
+import { apiRequest, showToast, getAuthUser, setStoredUser, setCachedCsrfToken } from './api.js';
+
+/**
+ * Resolves post-auth redirect target URL (?returnUrl, ?redirect, or ?next).
+ * Defaults to 'user-dashboard.html' if no destination parameter is provided.
+ */
+function getRedirectDestination() {
+  const params = new URLSearchParams(window.location.search);
+  const rawTarget = params.get('returnUrl') || params.get('redirect') || params.get('next');
+  if (rawTarget) {
+    try {
+      const decoded = decodeURIComponent(rawTarget);
+      // Validate safe internal destination
+      if (decoded.startsWith('/') || (!decoded.includes('://') && decoded.includes('.html'))) {
+        return decoded;
+      }
+      const parsed = new URL(decoded, window.location.origin);
+      if (parsed.origin === window.location.origin) {
+        return parsed.pathname + parsed.search + parsed.hash;
+      }
+    } catch {
+      return 'user-dashboard.html';
+    }
+  }
+  return 'user-dashboard.html';
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // If user is already logged in, redirect them to dashboard
+  // If user is already logged in, redirect them to requested destination or dashboard
   const user = await getAuthUser();
   if (user) {
     if (user.role === 'citizen') {
-      window.location.href = 'user-dashboard.html';
+      window.location.href = getRedirectDestination();
+      return;
+    } else if (user.role === 'admin') {
+      window.location.href = 'admin-dashboard.html';
       return;
     }
   }
@@ -74,10 +103,19 @@ function initLoginForm() {
     setLoading('login-submit-btn', false, 'Sign In to Dashboard');
 
     if (res.ok && res.success) {
+      // Store user and token in localStorage session bridge
+      if (res.data) {
+        setStoredUser(res.data, res.data.token);
+        if (res.data.csrf_token) {
+          setCachedCsrfToken(res.data.csrf_token);
+        }
+      }
+
       showToast('Login successful! Redirecting...', 'success');
+      const targetUrl = getRedirectDestination();
       setTimeout(() => {
-        window.location.href = 'user-dashboard.html';
-      }, 700);
+        window.location.href = targetUrl;
+      }, 600);
     } else {
       const msg = (res.error && res.error.message) || 'Invalid credentials or login failed.';
       showAlertBox(msg, 'error');
@@ -157,9 +195,10 @@ function initRegisterForm() {
 
     if (res.ok && res.success) {
       showToast('Registration successful! Please sign in.', 'success');
+      const targetUrl = getRedirectDestination();
       setTimeout(() => {
-        window.location.href = 'login.html';
-      }, 1000);
+        window.location.href = `login.html?returnUrl=${encodeURIComponent(targetUrl)}`;
+      }, 900);
     } else {
       const msg = (res.error && res.error.message) || 'Registration failed. Please check your details.';
       showAlertBox(msg, 'error');

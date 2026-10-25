@@ -45,6 +45,8 @@ backend/venv/
 backend/uploads/*
 !backend/uploads/.gitkeep
 uploads/
+node_modules/
+npm-debug.log*
 
 # Testing & coverage
 .pytest_cache/

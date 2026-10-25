@@ -1,7 +1,7 @@
 /**
  * Homepage Logic (ES Module)
  * Connects to live backend API, loads health status, config branding, dynamic services,
- * smooth scrolling, search/category filtering, and interactive service detail modal.
+ * in-page smooth scrolling with scroll-spy, search/category filtering, and interactive service detail modal.
  */
 
 import { apiRequest, showToast, getAuthUser, logoutUser, escapeHtml } from './api.js';
@@ -13,6 +13,7 @@ let currentSearchQuery = '';
 document.addEventListener('DOMContentLoaded', () => {
   initMobileMenu();
   initSmoothScroll();
+  initScrollSpy();
   initSystemHealth();
   initPortalConfig();
   initServices();
@@ -21,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Mobile Navigation Toggle
+ * Mobile Navigation Toggle & Auto-Close
  */
 function initMobileMenu() {
   const toggleBtn = document.getElementById('mobile-menu-toggle');
@@ -32,10 +33,10 @@ function initMobileMenu() {
       toggleBtn.setAttribute('aria-expanded', String(isOpen));
     });
 
-    // Close menu when clicking nav links
+    // Close mobile menu when clicking any nav link
     mainNav.querySelectorAll('.nav-link').forEach(link => {
       link.addEventListener('click', () => {
-        mainNav.classList.remove('open');
+        mainNav.classList.remove('open', 'nav-open');
         toggleBtn.setAttribute('aria-expanded', 'false');
       });
     });
@@ -49,19 +50,79 @@ function initSmoothScroll() {
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function(e) {
       const targetId = this.getAttribute('href');
-      if (targetId === '#' || !targetId) return;
+      if (!targetId || targetId === '#') return;
+      
       const targetEl = document.querySelector(targetId);
       if (targetEl) {
         e.preventDefault();
+        
+        // Close mobile drawer if open
+        const mainNav = document.getElementById('main-nav');
+        const toggleBtn = document.getElementById('mobile-menu-toggle');
+        if (mainNav) mainNav.classList.remove('open', 'nav-open');
+        if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+
         targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        try {
+          history.replaceState(null, '', targetId);
+        } catch {
+          // Ignore state history errors
+        }
       }
     });
   });
 }
 
 /**
- * Live Database Health Verification
+ * Scroll-Spy: Highlights active top navigation item based on window scroll position
  */
+function initScrollSpy() {
+  const sections = ['home', 'about', 'services', 'contact'];
+  const navLinks = {
+    home: document.getElementById('nav-link-home'),
+    about: document.getElementById('nav-link-about'),
+    services: document.getElementById('nav-link-services'),
+    contact: document.getElementById('nav-link-contact')
+  };
+
+  function updateActiveNav() {
+    const scrollPos = window.scrollY + 120; // Header offset threshold
+    let currentSection = 'home';
+
+    sections.forEach(secId => {
+      const el = document.getElementById(secId);
+      if (el) {
+        const top = el.offsetTop;
+        const height = el.offsetHeight;
+        if (scrollPos >= top && scrollPos < top + height) {
+          currentSection = secId;
+        }
+      }
+    });
+
+    // Check if scrolled near bottom of page (activate contact)
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 50) {
+      currentSection = 'contact';
+    }
+
+    Object.keys(navLinks).forEach(secId => {
+      const link = navLinks[secId];
+      if (link) {
+        link.classList.toggle('active', secId === currentSection);
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateActiveNav, { passive: true });
+  // Initial check
+  updateActiveNav();
+}
+
+/**
+ * Live Database Health Verification with 30-Second Polling
+ */
+let healthPollInterval = null;
+
 async function initSystemHealth() {
   const dot = document.getElementById('db-status-dot');
   const text = document.getElementById('db-status-text');
@@ -71,7 +132,8 @@ async function initSystemHealth() {
     const res = await apiRequest('/health');
     if (res.ok && res.data && res.data.database === 'connected') {
       dot.className = 'status-dot online';
-      text.textContent = 'Database Connected';
+      const latency = res.data.latency_ms !== null && res.data.latency_ms !== undefined ? ` (${res.data.latency_ms}ms)` : '';
+      text.textContent = `Database Connected${latency}`;
     } else {
       dot.className = 'status-dot offline';
       text.textContent = 'Database Offline (HTTP 503)';
@@ -79,6 +141,11 @@ async function initSystemHealth() {
   } catch (err) {
     dot.className = 'status-dot offline';
     text.textContent = 'Backend Unreachable';
+  }
+
+  // Set up 30-second polling interval once
+  if (!healthPollInterval) {
+    healthPollInterval = setInterval(initSystemHealth, 30000);
   }
 }
 
@@ -114,8 +181,6 @@ async function initPortalConfig() {
 
 /**
  * Live Service Catalog Loader with Search & Category Filtering
- * STRICT CLEAN DATA RULE:
- * If zero services are in the database, displays an honest empty state box.
  */
 async function initServices() {
   const container = document.getElementById('services-grid-container');
@@ -176,11 +241,12 @@ function renderFilteredServices() {
   if (!container) return;
 
   const filtered = allServices.filter(service => {
-    const matchCategory = (activeCategory === 'ALL') || (service.category === activeCategory);
+    const srvCategory = service.category || service.department || '';
+    const matchCategory = (activeCategory === 'ALL') || (srvCategory === activeCategory);
     const matchSearch = !currentSearchQuery ||
       (service.name && service.name.toLowerCase().includes(currentSearchQuery)) ||
       (service.description && service.description.toLowerCase().includes(currentSearchQuery)) ||
-      (service.category && service.category.toLowerCase().includes(currentSearchQuery));
+      (srvCategory && srvCategory.toLowerCase().includes(currentSearchQuery));
     return matchCategory && matchSearch;
   });
 
@@ -212,7 +278,7 @@ function renderFilteredServices() {
 
     const categorySpan = document.createElement('span');
     categorySpan.className = 'badge badge-category';
-    categorySpan.textContent = service.category || 'General';
+    categorySpan.textContent = service.department || service.category || 'General';
 
     const tag = document.createElement('span');
     tag.className = `availability-tag ${isAvailable ? 'available' : 'unavailable'}`;
@@ -227,7 +293,7 @@ function renderFilteredServices() {
 
     const desc = document.createElement('p');
     desc.className = 'service-item-desc';
-    desc.textContent = service.description || 'No description provided.';
+    desc.textContent = service.description || 'Official municipal civic service.';
 
     const footer = document.createElement('div');
     footer.className = 'service-item-footer';
@@ -275,7 +341,7 @@ function renderFilteredServices() {
 }
 
 /**
- * Handle Apply Online click with authentication check
+ * Handle Apply Online click with authentication check and returnUrl redirect
  */
 async function handleApplyClick(service) {
   const isAvailable = service.availability === 'Available' || service.availability === 'Active';
@@ -284,16 +350,14 @@ async function handleApplyClick(service) {
     return;
   }
 
-  const user = await getAuthUser();
   const applyUrl = `apply-service.html?slug=${encodeURIComponent(service.slug)}`;
+  const user = await getAuthUser();
 
   if (user && user.role === 'citizen') {
     window.location.href = applyUrl;
   } else {
-    showToast('Please login to apply for this service.', 'warning');
-    setTimeout(() => {
-      window.location.href = `login.html?redirect=${encodeURIComponent(applyUrl)}`;
-    }, 700);
+    // Smooth transition to login with returnUrl parameter
+    window.location.href = `login.html?returnUrl=${encodeURIComponent(applyUrl)}`;
   }
 }
 
@@ -318,12 +382,10 @@ function initServiceModal() {
   if (closeBtn) closeBtn.addEventListener('click', closeModal);
   if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
-  // Close on outside click
   modal.addEventListener('click', (e) => {
     if (e.target === modal) closeModal();
   });
 
-  // Close on ESC
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !modal.classList.contains('d-none')) {
       closeModal();
@@ -354,7 +416,7 @@ function openServiceModal(service) {
   const applyBtn = document.getElementById('modal-apply-btn');
 
   if (nameEl) nameEl.textContent = service.name;
-  if (catEl) catEl.textContent = service.category || 'General';
+  if (catEl) catEl.textContent = service.department || service.category || 'General';
   if (descEl) descEl.textContent = service.description || 'No description provided.';
   if (procEl) procEl.textContent = `${service.processing_days || 7} Working Days`;
   if (feeEl) feeEl.textContent = service.fee ? `$${service.fee}` : 'Free of Charge';
@@ -390,46 +452,64 @@ function openServiceModal(service) {
 /**
  * Navbar Authentication State
  */
+function renderGuestNav(authContainer) {
+  authContainer.innerHTML = '';
+  const loginLink = document.createElement('a');
+  loginLink.href = 'login.html';
+  loginLink.className = 'btn btn-sm btn-outline';
+  loginLink.id = 'nav-login-btn';
+  loginLink.textContent = 'Sign In';
+
+  const regLink = document.createElement('a');
+  regLink.href = 'register.html';
+  regLink.className = 'btn btn-sm btn-primary';
+  regLink.id = 'nav-register-btn';
+  regLink.textContent = 'Register';
+
+  authContainer.appendChild(loginLink);
+  authContainer.appendChild(regLink);
+}
+
+function renderAuthNav(authContainer, user) {
+  authContainer.innerHTML = '';
+  const isAdmin = user.role === 'admin' || user.role === 'super_admin' || Boolean(user.admin_role);
+  const dashUrl = isAdmin ? 'admin-dashboard.html' : 'user-dashboard.html';
+  const dashLink = document.createElement('a');
+  dashLink.href = dashUrl;
+  dashLink.className = 'btn btn-sm btn-primary';
+  dashLink.id = 'nav-dashboard-btn';
+  const firstName = (user.full_name || user.name || (isAdmin ? 'Admin' : 'User')).split(' ')[0];
+  dashLink.textContent = `Dashboard (${firstName})`;
+
+  const logoutBtn = document.createElement('button');
+  logoutBtn.className = 'btn btn-sm btn-outline btn-signout';
+  logoutBtn.id = 'nav-logout-btn';
+  logoutBtn.textContent = 'Sign Out';
+  logoutBtn.setAttribute('title', 'Sign out of your session');
+
+  logoutBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await logoutUser({
+      buttonEl: logoutBtn,
+      onImmediate: () => {
+        // Immediately flip the navbar to guest state without requiring a page refresh
+        renderGuestNav(authContainer);
+      }
+    });
+  });
+
+  authContainer.appendChild(dashLink);
+  authContainer.appendChild(logoutBtn);
+}
+
 async function initAuthNav() {
   const authContainer = document.getElementById('nav-auth-actions');
   if (!authContainer) return;
 
   const user = await getAuthUser();
-  authContainer.innerHTML = '';
-
-  if (user) {
-    // Authenticated Citizen or Admin
-    const dashUrl = user.role === 'admin' ? 'admin-dashboard.html' : 'user-dashboard.html';
-    const dashLink = document.createElement('a');
-    dashLink.href = dashUrl;
-    dashLink.className = 'btn btn-sm btn-primary';
-    const firstName = (user.full_name || user.name || 'User').split(' ')[0];
-    dashLink.textContent = `Dashboard (${firstName})`;
-
-    const logoutBtn = document.createElement('button');
-    logoutBtn.className = 'btn btn-sm btn-outline';
-    logoutBtn.textContent = 'Sign Out';
-    logoutBtn.addEventListener('click', async () => {
-      await logoutUser();
-      showToast('You have been signed out.', 'info');
-      setTimeout(() => window.location.reload(), 600);
-    });
-
-    authContainer.appendChild(dashLink);
-    authContainer.appendChild(logoutBtn);
+  if (user && user.authenticated !== false && (user.id || user._id || user.email)) {
+    renderAuthNav(authContainer, user);
   } else {
-    // Guest Citizen
-    const loginLink = document.createElement('a');
-    loginLink.href = 'login.html';
-    loginLink.className = 'btn btn-sm btn-outline';
-    loginLink.textContent = 'Sign In';
-
-    const regLink = document.createElement('a');
-    regLink.href = 'register.html';
-    regLink.className = 'btn btn-sm btn-primary';
-    regLink.textContent = 'Register';
-
-    authContainer.appendChild(loginLink);
-    authContainer.appendChild(regLink);
+    renderGuestNav(authContainer);
   }
 }

@@ -1,0 +1,45 @@
+{
+  "name": "municipal-civic-portal",
+  "version": "1.0.0",
+  "description": "Production Municipal Service & Grievance Redressal Portal with MongoDB Atlas",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "echo 'No build step required for Node backend'",
+    "seed": "node scripts/seed.js",
+    "reset-password": "node scripts/resetPassword.js",
+    "list-users": "node scripts/listUsers.js",
+    "db:check": "node scripts/checkDb.js",
+    "start:python": "python run.py",
+    "seed:python": "python backend/scripts/seed_admin.py && python backend/scripts/init_services.py",
+    "test": "pytest -v backend/tests"
+  },
+  "keywords": [
+    "civic-portal",
+    "express",
+    "mongoose",
+    "mongodb-atlas",
+    "flask",
+    "government-services"
+  ],
+  "author": "Municipal Administration",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.11.0",
+    "compression": "^1.8.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.3.0",
+    "morgan": "^1.12.1",
+    "multer": "^2.4.0"
+  }
+}

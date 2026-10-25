@@ -34,27 +34,35 @@ def create_indexes():
 
     created = []
 
-    # 1. users collection: unique index on lowercase email
+    # 1. users collection: unique index on lowercase email, role, department
     users_idx = db.users.create_index([("email", ASCENDING)], unique=True, name="idx_users_email_unique")
-    created.append(("users", users_idx))
+    users_role_idx = db.users.create_index([("role", ASCENDING), ("is_active", ASCENDING)], name="idx_users_role_active")
+    users_dept_idx = db.users.create_index([("department", ASCENDING)], name="idx_users_dept")
+    created.extend([("users", users_idx), ("users", users_role_idx), ("users", users_dept_idx)])
 
     # 2. applications collection:
-    # - unique application_id (MSP-APP-YYYY-XXXXXXXX)
-    # - compound index user_id + created_at (for citizen dashboard queries)
-    # - status index (for officer review filters and counts)
     app_id_idx = db.applications.create_index([("application_id", ASCENDING)], unique=True, name="idx_apps_app_id_unique")
     app_user_idx = db.applications.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)], name="idx_apps_user_created")
     app_status_idx = db.applications.create_index([("status", ASCENDING)], name="idx_apps_status")
-    created.extend([("applications", app_id_idx), ("applications", app_user_idx), ("applications", app_status_idx)])
+    app_service_idx = db.applications.create_index([("service_slug", ASCENDING)], name="idx_apps_service")
+    app_dept_idx = db.applications.create_index([("department", ASCENDING)], name="idx_apps_dept")
+    app_del_idx = db.applications.create_index([("is_deleted", ASCENDING), ("created_at", DESCENDING)], name="idx_apps_del_created")
+    created.extend([
+        ("applications", app_id_idx), ("applications", app_user_idx), ("applications", app_status_idx),
+        ("applications", app_service_idx), ("applications", app_dept_idx), ("applications", app_del_idx)
+    ])
 
     # 3. complaints collection:
-    # - unique complaint_id (MSP-CMP-YYYY-XXXXXXXX)
-    # - compound index user_id + created_at
-    # - status index
     cmp_id_idx = db.complaints.create_index([("complaint_id", ASCENDING)], unique=True, name="idx_cmps_cmp_id_unique")
     cmp_user_idx = db.complaints.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)], name="idx_cmps_user_created")
     cmp_status_idx = db.complaints.create_index([("status", ASCENDING)], name="idx_cmps_status")
-    created.extend([("complaints", cmp_id_idx), ("complaints", cmp_user_idx), ("complaints", cmp_status_idx)])
+    cmp_cat_idx = db.complaints.create_index([("category", ASCENDING)], name="idx_cmps_cat")
+    cmp_priority_idx = db.complaints.create_index([("priority", ASCENDING)], name="idx_cmps_priority")
+    cmp_del_idx = db.complaints.create_index([("is_deleted", ASCENDING), ("created_at", DESCENDING)], name="idx_cmps_del_created")
+    created.extend([
+        ("complaints", cmp_id_idx), ("complaints", cmp_user_idx), ("complaints", cmp_status_idx),
+        ("complaints", cmp_cat_idx), ("complaints", cmp_priority_idx), ("complaints", cmp_del_idx)
+    ])
 
     # 4. notifications collection: compound user_id + is_read for rapid unread badge queries
     notif_idx = db.notifications.create_index([("user_id", ASCENDING), ("is_read", ASCENDING)], name="idx_notif_user_unread")
@@ -62,7 +70,8 @@ def create_indexes():
 
     # 5. services collection: unique slug index (e.g. 'birth-certificate')
     srv_slug_idx = db.services.create_index([("slug", ASCENDING)], unique=True, name="idx_services_slug_unique")
-    created.append(("services", srv_slug_idx))
+    srv_avail_idx = db.services.create_index([("availability", ASCENDING)], name="idx_services_availability")
+    created.extend([("services", srv_slug_idx), ("services", srv_avail_idx)])
 
     # 6. departments collection: unique department name index
     dept_name_idx = db.departments.create_index([("name", ASCENDING)], unique=True, name="idx_departments_name_unique")
@@ -71,7 +80,12 @@ def create_indexes():
     # 7. audit_logs collection: indexed for chronological inspection and filtering
     audit_time_idx = db.audit_logs.create_index([("timestamp", DESCENDING)], name="idx_audit_timestamp")
     audit_action_idx = db.audit_logs.create_index([("action", ASCENDING)], name="idx_audit_action")
-    created.extend([("audit_logs", audit_time_idx), ("audit_logs", audit_action_idx)])
+    audit_actor_idx = db.audit_logs.create_index([("actor_id", ASCENDING)], name="idx_audit_actor")
+    created.extend([("audit_logs", audit_time_idx), ("audit_logs", audit_action_idx), ("audit_logs", audit_actor_idx)])
+
+    # 8. announcements collection:
+    ann_idx = db.announcements.create_index([("is_active", ASCENDING), ("created_at", DESCENDING)], name="idx_announcements_active")
+    created.append(("announcements", ann_idx))
 
     logger.info("Successfully created/verified %d indexes across 7 collections:", len(created))
     for collection, idx_name in created:

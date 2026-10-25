@@ -1,94 +1,282 @@
 /**
- * Administrative Grievances Review Controller (ESM)
- * Lists, filters, inspects, and resolves citizen municipal complaints.
+ * Administrative Grievances Redressal Controller (ESM)
+ * Department routing, SLA tracking, photo evidence inspection, and resolution verification.
  */
 
-import { apiFetch, checkDbHealth, updateDbStatusPill } from "./api.js";
+import { apiFetch, checkDbHealth, logoutUser } from "./api.js";
 
-let activeReviewCmpId = null;
+let adminProfile = null;
+let activeCmpId = null;
+
+document.addEventListener("DOMContentLoaded", initAdminComplaints);
 
 async function initAdminComplaints() {
-  // 1. Verify Admin Session
+  // 1. Verify Administrative Session
   try {
     const authRes = await apiFetch("/admin/auth/me", { method: "GET" });
-    if (!authRes.success || !authRes.data || authRes.data.role !== "admin") {
+    if (!authRes.success || !authRes.data) {
       window.location.href = "admin-login.html";
       return;
     }
+    adminProfile = authRes.data;
     const userDisplay = document.getElementById("admin-user-display");
-    if (userDisplay) userDisplay.textContent = authRes.data.email || "Administrator";
+    const roleDisplay = document.getElementById("admin-role-display");
+    const initialsDisplay = document.getElementById("admin-avatar-initials");
+
+    if (userDisplay) userDisplay.textContent = adminProfile.full_name || adminProfile.email || "Administrator";
+    if (roleDisplay) roleDisplay.textContent = adminProfile.admin_role || adminProfile.role || "Admin";
+    if (initialsDisplay) {
+      const name = adminProfile.full_name || adminProfile.email || "AD";
+      initialsDisplay.textContent = name.substring(0, 2).toUpperCase();
+    }
   } catch (err) {
     console.error("Admin verification error:", err);
     window.location.href = "admin-login.html";
     return;
   }
 
-  // 2. Sign Out
-  document.getElementById("btn-admin-logout")?.addEventListener("click", async () => {
-    await apiFetch("/admin/auth/logout", { method: "POST" });
-    window.location.href = "admin-login.html";
-  });
-
-  // 3. Load Departments Dropdown
-  await loadDepartments();
-
-  // 4. Setup Filters & Search
+  // 2. Setup Controls
+  setupSidebarControls();
+  setupSignOut();
   setupFilters();
-
-  // 5. Setup Modal Handlers
   setupModalHandlers();
 
-  // 6. Initial Data Load
+  // 3. Load Departments & Grievances
+  await loadDepartmentsFilter();
   await loadComplaints();
 }
 
-async function loadDepartments() {
-  const deptSelect = document.getElementById("cmp-dept-filter");
-  if (!deptSelect) return;
-
-  try {
-    const res = await apiFetch("/complaints/departments", { method: "GET" });
-    if (res.success && Array.isArray(res.data)) {
-      deptSelect.innerHTML = `<option value="ALL">All Departments</option>` +
-        res.data.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join("");
-    }
-  } catch (err) {
-    console.error("Failed to load departments:", err);
+function setupSidebarControls() {
+  const toggleBtn = document.getElementById("sidebar-toggle-btn");
+  const sidebar = document.getElementById("admin-sidebar");
+  if (toggleBtn && sidebar) {
+    toggleBtn.addEventListener("click", () => sidebar.classList.toggle("open"));
   }
 }
 
+function setupSignOut() {
+  const logoutBtn = document.getElementById("btn-admin-logout");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await logoutUser({
+        buttonEl: logoutBtn,
+        redirect: "admin-login.html"
+      });
+    });
+  }
+
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted && !localStorage.getItem("msp_token") && !localStorage.getItem("msp_admin_token")) {
+      window.location.replace("admin-login.html");
+    }
+  });
+}
+
+let currentOverdue = false;
+
 function setupFilters() {
   const searchInput = document.getElementById("cmp-search-input");
+  const rangeFilter = document.getElementById("cmp-range-filter");
   const deptFilter = document.getElementById("cmp-dept-filter");
   const statusFilter = document.getElementById("cmp-status-filter");
+  const priorityFilter = document.getElementById("cmp-priority-filter");
+  const chkDeleted = document.getElementById("chk-include-deleted");
+  const clearBtn = document.getElementById("btn-clear-filters");
+
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("range") && rangeFilter) rangeFilter.value = urlParams.get("range");
+  const rawStatus = urlParams.get("status");
+  if (rawStatus && statusFilter) {
+    let matched = false;
+    for (const opt of statusFilter.options) {
+      if (opt.value.toLowerCase() === rawStatus.toLowerCase()) {
+        statusFilter.value = opt.value;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) statusFilter.value = rawStatus;
+  }
+  if (urlParams.get("department") && deptFilter) deptFilter.value = urlParams.get("department");
+  if (urlParams.get("priority") && priorityFilter) priorityFilter.value = urlParams.get("priority");
+  if (urlParams.get("overdue") === "true") currentOverdue = true;
+  if (urlParams.get("q") && searchInput) searchInput.value = urlParams.get("q");
 
   let debounceTimer = null;
   searchInput?.addEventListener("input", () => {
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      loadComplaints();
-    }, 300);
+    debounceTimer = setTimeout(loadComplaints, 300);
   });
 
-  deptFilter?.addEventListener("change", () => loadComplaints());
-  statusFilter?.addEventListener("change", () => loadComplaints());
+  rangeFilter?.addEventListener("change", loadComplaints);
+  deptFilter?.addEventListener("change", loadComplaints);
+  statusFilter?.addEventListener("change", loadComplaints);
+  priorityFilter?.addEventListener("change", loadComplaints);
+  chkDeleted?.addEventListener("change", loadComplaints);
+  clearBtn?.addEventListener("click", resetAllFilters);
+
+  // Support browser Back/Forward navigation
+  window.addEventListener("popstate", () => {
+    const currentParams = new URLSearchParams(window.location.search);
+    if (rangeFilter) rangeFilter.value = currentParams.get("range") || "all";
+    if (statusFilter) statusFilter.value = currentParams.get("status") || "ALL";
+    if (deptFilter) deptFilter.value = currentParams.get("department") || "ALL";
+    if (priorityFilter) priorityFilter.value = currentParams.get("priority") || "ALL";
+    if (searchInput) searchInput.value = currentParams.get("q") || "";
+    currentOverdue = currentParams.get("overdue") === "true";
+    loadComplaints();
+  });
+}
+
+function resetAllFilters() {
+  const sInput = document.getElementById("cmp-search-input");
+  if (sInput) sInput.value = "";
+  const rFilter = document.getElementById("cmp-range-filter");
+  if (rFilter) rFilter.value = "all";
+  const dFilter = document.getElementById("cmp-dept-filter");
+  if (dFilter) dFilter.value = "ALL";
+  const stFilter = document.getElementById("cmp-status-filter");
+  if (stFilter) stFilter.value = "ALL";
+  const pFilter = document.getElementById("cmp-priority-filter");
+  if (pFilter) pFilter.value = "ALL";
+  const chkDel = document.getElementById("chk-include-deleted");
+  if (chkDel) chkDel.checked = false;
+  currentOverdue = false;
+
+  window.history.replaceState({}, "", window.location.pathname);
+  loadComplaints();
+}
+
+function updateFilterChips(searchVal, rangeVal, deptVal, statusVal, priorityVal) {
+  const bar = document.getElementById("filter-chips-bar");
+  const container = document.getElementById("filter-chips-container");
+  if (!bar || !container) return;
+
+  const chips = [];
+
+  if (searchVal) {
+    chips.push({
+      label: `Search: "${searchVal}"`,
+      remove: () => {
+        const inp = document.getElementById("cmp-search-input");
+        if (inp) inp.value = "";
+        loadComplaints();
+      }
+    });
+  }
+
+  if (rangeVal && rangeVal !== "all") {
+    chips.push({
+      label: `Date: ${rangeVal.toUpperCase()}`,
+      remove: () => {
+        const sel = document.getElementById("cmp-range-filter");
+        if (sel) sel.value = "all";
+        loadComplaints();
+      }
+    });
+  }
+
+  if (statusVal && statusVal !== "ALL") {
+    chips.push({
+      label: `Status: ${statusVal}`,
+      remove: () => {
+        const sel = document.getElementById("cmp-status-filter");
+        if (sel) sel.value = "ALL";
+        loadComplaints();
+      }
+    });
+  }
+
+  if (deptVal && deptVal !== "ALL") {
+    chips.push({
+      label: `Department: ${deptVal}`,
+      remove: () => {
+        const sel = document.getElementById("cmp-dept-filter");
+        if (sel) sel.value = "ALL";
+        loadComplaints();
+      }
+    });
+  }
+
+  if (priorityVal && priorityVal !== "ALL") {
+    chips.push({
+      label: `Priority: ${priorityVal}`,
+      remove: () => {
+        const sel = document.getElementById("cmp-priority-filter");
+        if (sel) sel.value = "ALL";
+        loadComplaints();
+      }
+    });
+  }
+
+  if (currentOverdue) {
+    chips.push({
+      label: `Overdue Grievances`,
+      remove: () => {
+        currentOverdue = false;
+        loadComplaints();
+      }
+    });
+  }
+
+  if (chips.length === 0) {
+    bar.classList.add("d-none");
+    container.innerHTML = "";
+  } else {
+    container.innerHTML = "";
+    chips.forEach((c) => {
+      const chipEl = document.createElement("span");
+      chipEl.className = "filter-chip";
+      chipEl.innerHTML = `${escapeHtml(c.label)} <span class="chip-remove" aria-label="Remove filter">&times;</span>`;
+      chipEl.querySelector(".chip-remove").addEventListener("click", c.remove);
+      container.appendChild(chipEl);
+    });
+    bar.classList.remove("d-none");
+  }
+}
+
+async function loadDepartmentsFilter() {
+  const select = document.getElementById("cmp-dept-filter");
+  if (!select) return;
+  try {
+    const res = await apiFetch("/admin/departments", { method: "GET" });
+    if (res.success && res.data) {
+      res.data.forEach((d) => {
+        const opt = document.createElement("option");
+        opt.value = d.name;
+        opt.textContent = d.name;
+        select.appendChild(opt);
+      });
+    }
+  } catch (err) {}
 }
 
 async function loadComplaints() {
   const tbody = document.getElementById("admin-cmps-tbody");
   const searchVal = document.getElementById("cmp-search-input")?.value.trim() || "";
+  const rangeVal = document.getElementById("cmp-range-filter")?.value || "all";
   const deptVal = document.getElementById("cmp-dept-filter")?.value || "ALL";
   const statusVal = document.getElementById("cmp-status-filter")?.value || "ALL";
+  const priorityVal = document.getElementById("cmp-priority-filter")?.value || "ALL";
+  const incDeleted = document.getElementById("chk-include-deleted")?.checked;
 
   if (!tbody) return;
 
+  updateFilterChips(searchVal, rangeVal, deptVal, statusVal, priorityVal);
+
   try {
     const params = new URLSearchParams();
+    if (rangeVal !== "all") params.append("range", rangeVal);
     if (deptVal !== "ALL") params.append("department", deptVal);
     if (statusVal !== "ALL") params.append("status", statusVal);
+    if (priorityVal !== "ALL") params.append("priority", priorityVal);
     if (searchVal) params.append("q", searchVal);
+    if (currentOverdue) params.append("overdue", "true");
+    if (incDeleted) params.append("include_deleted", "true");
 
     const queryStr = params.toString() ? `?${params.toString()}` : "";
+    window.history.replaceState({}, "", queryStr || window.location.pathname);
     const res = await apiFetch(`/admin/complaints${queryStr}`, { method: "GET" });
 
     if (!res.success) {
@@ -101,123 +289,52 @@ async function loadComplaints() {
       tbody.innerHTML = `
         <tr>
           <td colspan="8" class="text-center py-6 text-muted">
-            No citizen grievances match your search criteria (0 records).
+            <div class="empty-state-card" style="margin: 0; border: none;">
+              <div class="empty-state-icon">🛠️</div>
+              <div class="empty-state-title">No Grievances Match Filter</div>
+              <div class="empty-state-subtext">No citizen grievances found matching your current filter criteria.</div>
+            </div>
           </td>
         </tr>
       `;
       return;
     }
 
-    tbody.innerHTML = complaints.map(cmp => {
-      const dateFormatted = cmp.created_at ? new Date(cmp.created_at).toLocaleDateString() : "N/A";
-      const badgeClass = getStatusBadgeClass(cmp.status);
+    tbody.innerHTML = complaints
+      .map((c) => {
+        const statusBadge = getStatusBadge(c.status);
+        const priorityBadge = getPriorityBadge(c.priority);
+        const slaBadge = c.is_overdue
+          ? `<span class="badge badge-danger">Overdue</span>`
+          : `<span class="badge badge-neutral">On Schedule</span>`;
+        const escalatedBadge = c.escalated ? `<span class="badge badge-danger ml-1">Escalated</span>` : "";
 
-      return `
-        <tr id="cmp-row-${escapeHtml(cmp.complaint_id)}">
-          <td><strong class="font-mono">${escapeHtml(cmp.complaint_id)}</strong></td>
-          <td><span class="badge badge-info">${escapeHtml(cmp.department)}</span></td>
-          <td><strong>${escapeHtml(cmp.title)}</strong></td>
-          <td>${escapeHtml(cmp.citizen_name || "Citizen")}</td>
-          <td class="text-xs text-muted">${escapeHtml(cmp.location || "")}</td>
-          <td><span class="status-badge ${badgeClass}">${escapeHtml(cmp.status)}</span></td>
-          <td>${dateFormatted}</td>
+        return `
+        <tr>
+          <td><strong class="font-mono text-neutral-900">${escapeHtml(c.complaint_id)}</strong> ${escalatedBadge}</td>
           <td>
-            <button class="btn btn-sm btn-primary btn-review-cmp" data-id="${escapeHtml(cmp.complaint_id)}">
+            <div class="font-bold">${escapeHtml(c.title || "Civic Defect")}</div>
+            <div class="text-xs text-muted">${escapeHtml(c.location || "Location not given")}</div>
+          </td>
+          <td><span class="text-xs font-semibold">${escapeHtml(c.department || "General")}</span></td>
+          <td>
+            <div class="font-semibold">${escapeHtml(c.citizen_name || "Citizen")}</div>
+            <div class="text-xs text-muted">${escapeHtml(c.citizen_email || "")}</div>
+          </td>
+          <td>${priorityBadge}</td>
+          <td>${statusBadge}</td>
+          <td>${slaBadge}</td>
+          <td>
+            <button class="btn btn-xs btn-outline" onclick="window.viewComplaintModal('${escapeHtml(c.complaint_id)}')">
               Review
             </button>
           </td>
-        </tr>
-      `;
-    }).join("");
-
-    // Attach Review Click Handlers
-    tbody.querySelectorAll(".btn-review-cmp").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        const cmpId = e.currentTarget.getAttribute("data-id");
-        await openComplaintModal(cmpId);
-      });
-    });
-
+        </tr>`;
+      })
+      .join("");
   } catch (err) {
-    console.error("Load complaints error:", err);
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Database query error.</td></tr>`;
-  }
-}
-
-async function openComplaintModal(cmpId) {
-  activeReviewCmpId = cmpId;
-  const modal = document.getElementById("cmp-review-modal");
-  const modalTitle = document.getElementById("modal-cmp-title");
-  const modalId = document.getElementById("modal-cmp-id");
-  const modalDept = document.getElementById("modal-cmp-dept");
-  const citizenName = document.getElementById("modal-cmp-citizen");
-  const cmpLoc = document.getElementById("modal-cmp-loc");
-  const cmpDate = document.getElementById("modal-cmp-date");
-  const geoBox = document.getElementById("modal-geo-box");
-  const geoCoords = document.getElementById("modal-geo-coords");
-  const cmpDesc = document.getElementById("modal-cmp-desc");
-  const photosList = document.getElementById("modal-cmp-photos");
-  const statusSelect = document.getElementById("officer-cmp-status");
-  const remarksInput = document.getElementById("officer-cmp-remarks");
-  const alertBox = document.getElementById("modal-cmp-action-alert");
-
-  if (alertBox) alertBox.classList.add("d-none");
-  if (remarksInput) remarksInput.value = "";
-
-  try {
-    const res = await apiFetch(`/admin/complaints/${encodeURIComponent(cmpId)}`, { method: "GET" });
-    if (!res.success || !res.data) {
-      alert("Failed to retrieve grievance details.");
-      return;
-    }
-
-    const cmp = res.data;
-    if (modalTitle) modalTitle.textContent = cmp.title;
-    if (modalId) modalId.textContent = cmp.complaint_id;
-    if (modalDept) modalDept.textContent = cmp.department || "General";
-    if (citizenName) citizenName.textContent = cmp.citizen_name || "-";
-    if (cmpLoc) cmpLoc.textContent = cmp.location || "-";
-    if (cmpDate) cmpDate.textContent = cmp.created_at ? new Date(cmp.created_at).toLocaleString() : "-";
-    if (cmpDesc) cmpDesc.textContent = cmp.description || "-";
-
-    // Set current status in dropdown
-    if (statusSelect) statusSelect.value = cmp.status;
-
-    // GPS Coordinates
-    if (cmp.coordinates && geoBox && geoCoords) {
-      geoCoords.textContent = `Lat: ${cmp.coordinates.latitude}, Lng: ${cmp.coordinates.longitude}`;
-      geoBox.classList.remove("d-none");
-    } else if (geoBox) {
-      geoBox.classList.add("d-none");
-    }
-
-    // Photographic Evidence
-    if (photosList) {
-      const images = cmp.images || [];
-      if (images.length === 0) {
-        photosList.innerHTML = `<p class="text-xs text-muted">No photo evidence attached by citizen.</p>`;
-      } else {
-        photosList.innerHTML = images.map((img, idx) => {
-          const sizeKb = (img.file_size / 1024).toFixed(0);
-          return `
-            <div class="document-review-chip" id="photo-chip-${idx}">
-              <span class="doc-icon">📷</span>
-              <span class="doc-name" title="${escapeHtml(img.original_filename)}">${escapeHtml(img.original_filename)}</span>
-              <span class="doc-size">(${sizeKb} KB)</span>
-              <a href="${escapeHtml(img.download_url)}" class="btn btn-xs btn-outline ml-auto" target="_blank" download>
-                View Photo
-              </a>
-            </div>
-          `;
-        }).join("");
-      }
-    }
-
-    if (modal) modal.classList.remove("d-none");
-
-  } catch (err) {
-    console.error("Open grievance modal error:", err);
-    alert("Connection error loading complaint detail.");
+    console.error("Grievances load error:", err);
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Error loading grievance records.</td></tr>`;
   }
 }
 
@@ -225,108 +342,227 @@ function setupModalHandlers() {
   const modal = document.getElementById("cmp-review-modal");
   const closeBtn = document.getElementById("btn-close-cmp-modal");
   const cancelBtn = document.getElementById("btn-cancel-cmp-modal");
-  const form = document.getElementById("officer-cmp-decision-form");
-  const submitBtn = document.getElementById("btn-save-cmp-decision");
-  const spinner = document.getElementById("cmp-decision-spinner");
-  const btnText = submitBtn?.querySelector(".btn-text");
 
-  function closeModal() {
-    if (modal) modal.classList.add("d-none");
-    activeReviewCmpId = null;
-  }
+  const hideModal = () => modal?.classList.add("d-none");
+  closeBtn?.addEventListener("click", hideModal);
+  cancelBtn?.addEventListener("click", hideModal);
 
-  closeBtn?.addEventListener("click", closeModal);
-  cancelBtn?.addEventListener("click", closeModal);
-
-  form?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (!activeReviewCmpId) return;
-
-    const newStatus = document.getElementById("officer-cmp-status")?.value;
-    const reassignDept = document.getElementById("officer-cmp-reassign-dept")?.value;
-    const remarks = document.getElementById("officer-cmp-remarks")?.value.trim();
-    const alertBox = document.getElementById("modal-cmp-action-alert");
-
-    if (!remarks || remarks.length < 5) {
-      if (alertBox) {
-        alertBox.className = "alert alert-danger mb-3";
-        alertBox.textContent = "Please provide substantive resolution remarks (minimum 5 characters).";
-        alertBox.classList.remove("d-none");
-      }
-      return;
-    }
-
-    if (submitBtn) submitBtn.disabled = true;
-    if (spinner) spinner.classList.remove("d-none");
-    if (btnText) btnText.textContent = "Recording...";
+  window.viewComplaintModal = async (complaintId) => {
+    activeCmpId = complaintId;
+    if (!modal) return;
+    modal.classList.remove("d-none");
+    document.getElementById("modal-cmp-id").textContent = complaintId;
+    const body = document.getElementById("modal-cmp-body");
+    body.innerHTML = `<div class="text-center py-6 text-muted">Retrieving grievance particulars...</div>`;
 
     try {
-      let res;
-      if (reassignDept) {
-        // Grievance assignment endpoint
-        res = await apiFetch(`/admin/complaints/${encodeURIComponent(activeReviewCmpId)}/assign`, {
-          method: "PATCH",
-          body: { department: reassignDept, remarks }
-        });
-      } else {
-        // Standard resolution status endpoint
-        res = await apiFetch(`/admin/complaints/${encodeURIComponent(activeReviewCmpId)}/status`, {
-          method: "PATCH",
-          body: { status: newStatus, remarks }
-        });
-      }
-
-      if (!res.success) {
-        if (alertBox) {
-          alertBox.className = "alert alert-danger mb-3";
-          alertBox.textContent = res.error?.message || "Failed to update complaint status.";
-          alertBox.classList.remove("d-none");
-        }
+      const res = await apiFetch(`/admin/complaints/${complaintId}`, { method: "GET" });
+      if (!res.success || !res.data) {
+        body.innerHTML = `<div class="alert alert-danger">${escapeHtml(res.error?.message || "Failed to load grievance.")}</div>`;
         return;
       }
 
-      closeModal();
-      const actionMsg = reassignDept
-        ? `Grievance ${activeReviewCmpId} assigned to '${reassignDept}'.`
-        : `Grievance ${activeReviewCmpId} status updated to '${newStatus}'.`;
-      showAdminCmpAlert(actionMsg, "success");
-      await loadComplaints();
+      const d = res.data;
+      const imagesHtml = d.images?.length
+        ? `<div class="d-flex gap-3 flex-wrap mt-2">
+            ${d.images.map((img) => `<a href="${escapeHtml(img.download_url)}" target="_blank"><img src="${escapeHtml(img.download_url)}" alt="Photo evidence" style="width: 90px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1;"></a>`).join("")}
+           </div>`
+        : `<div class="text-muted text-sm mt-1">No photographs attached to this grievance.</div>`;
 
+      const repliesHtml = d.citizen_replies?.length
+        ? d.citizen_replies.map((r) => `<div class="bg-neutral-50 p-2 rounded border mb-2 text-xs"><strong>${escapeHtml(r.author)}:</strong> ${escapeHtml(r.message)}</div>`).join("")
+        : `<div class="text-muted text-xs">No replies sent to citizen yet.</div>`;
+
+      const notesHtml = d.internal_notes?.length
+        ? d.internal_notes.map((n) => `<div class="bg-neutral-50 p-2 rounded border mb-2 text-xs"><strong>${escapeHtml(n.author)}:</strong> ${escapeHtml(n.note)}</div>`).join("")
+        : `<div class="text-muted text-xs">No internal notes on this file.</div>`;
+
+      // Get department options
+      const deptsRes = await apiFetch("/admin/departments", { method: "GET" });
+      const departments = deptsRes.data || [];
+      const deptOptions = departments
+        .map((dep) => `<option value="${escapeHtml(dep.name)}" ${dep.name === d.department ? "selected" : ""}>${escapeHtml(dep.name)}</option>`)
+        .join("");
+
+      body.innerHTML = `
+        <div class="mb-4 pb-3 border-bottom">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h3 class="text-base font-bold text-neutral-900 m-0">${escapeHtml(d.title || "Civic Grievance")}</h3>
+              <span class="text-xs text-muted">Citizen: <strong>${escapeHtml(d.citizen_name)}</strong> (${escapeHtml(d.citizen_email)})</span>
+            </div>
+            <div class="d-flex gap-2">
+              ${getPriorityBadge(d.priority)}
+              ${getStatusBadge(d.status)}
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4 bg-neutral-50 p-3 rounded border text-sm">
+          <div><strong class="text-xs text-muted uppercase">Description:</strong></div>
+          <p class="mt-1 mb-2">${escapeHtml(d.description || "No detailed description provided.")}</p>
+          <div class="d-flex justify-content-between text-xs text-muted">
+            <span><strong>Location:</strong> ${escapeHtml(d.location || "N/A")}</span>
+            <span><strong>Coordinates:</strong> ${escapeHtml(d.coordinates ? `${d.coordinates.lat}, ${d.coordinates.lng}` : "N/A")}</span>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <h4 class="text-xs font-bold uppercase text-neutral-500 mb-1">Attached Photo Evidence</h4>
+          ${imagesHtml}
+        </div>
+
+        <div class="mb-4">
+          <h4 class="text-xs font-bold uppercase text-neutral-500 mb-2">Department Assignment & Priority</h4>
+          <div class="d-flex gap-3 flex-wrap">
+            <select id="modal-dept-select" class="form-select flex-1" style="min-width: 200px;">
+              ${deptOptions}
+            </select>
+            <select id="modal-priority-select" class="form-select" style="max-width: 150px;">
+              <option value="Low" ${d.priority === "Low" ? "selected" : ""}>Low</option>
+              <option value="Medium" ${d.priority === "Medium" ? "selected" : ""}>Medium</option>
+              <option value="High" ${d.priority === "High" ? "selected" : ""}>High</option>
+              <option value="Urgent" ${d.priority === "Urgent" ? "selected" : ""}>Urgent</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <h4 class="text-xs font-bold uppercase text-neutral-500 mb-2">Update Resolution Status</h4>
+          <div class="d-flex gap-3 mb-2">
+            <select id="modal-status-select" class="form-select" style="max-width: 220px;">
+              <option value="In Progress" ${d.status === "In Progress" ? "selected" : ""}>In Progress (Dispatched)</option>
+              <option value="Resolved" ${d.status === "Resolved" ? "selected" : ""}>Mark Resolved</option>
+              <option value="Closed" ${d.status === "Closed" ? "selected" : ""}>Close Grievance</option>
+              <option value="Rejected" ${d.status === "Rejected" ? "selected" : ""}>Reject / Invalid</option>
+            </select>
+          </div>
+          <textarea id="modal-status-remarks" class="form-control mb-2" rows="2" placeholder="Mandatory resolution / status remarks (minimum 5 chars)..."></textarea>
+          <input type="text" id="modal-proof-input" class="form-control text-xs" placeholder="Optional resolution proof URL or note...">
+        </div>
+
+        <div class="mb-4">
+          <h4 class="text-xs font-bold uppercase text-neutral-500 mb-1">Official Reply to Citizen</h4>
+          ${repliesHtml}
+          <div class="d-flex gap-2 mt-2">
+            <input type="text" id="input-new-reply" class="form-control text-xs" placeholder="Message will be sent to citizen dashboard...">
+            <button class="btn btn-xs btn-outline" id="btn-send-reply">Send Reply</button>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <h4 class="text-xs font-bold uppercase text-neutral-500 mb-1">Internal Notes</h4>
+          ${notesHtml}
+          <div class="d-flex gap-2 mt-2">
+            <input type="text" id="input-new-note" class="form-control text-xs" placeholder="Confidential note for department records...">
+            <button class="btn btn-xs btn-outline" id="btn-add-note">Add Note</button>
+          </div>
+        </div>
+      `;
+
+      const footer = document.getElementById("modal-cmp-footer");
+      footer.innerHTML = `
+        <button class="btn btn-sm btn-outline text-danger" id="btn-escalate">Escalate</button>
+        <button class="btn btn-sm btn-outline" id="btn-cancel-modal">Cancel</button>
+        <button class="btn btn-sm btn-primary" id="btn-save-all">Save Changes</button>
+      `;
+
+      document.getElementById("btn-cancel-modal")?.addEventListener("click", hideModal);
+
+      // Reply
+      document.getElementById("btn-send-reply")?.addEventListener("click", async () => {
+        const msg = document.getElementById("input-new-reply")?.value.trim();
+        if (!msg || msg.length < 5) return alert("Reply must be at least 5 characters.");
+        await apiFetch(`/admin/complaints/${complaintId}/reply`, { method: "POST", body: { message: msg } });
+        window.viewComplaintModal(complaintId);
+      });
+
+      // Internal note
+      document.getElementById("btn-add-note")?.addEventListener("click", async () => {
+        const note = document.getElementById("input-new-note")?.value.trim();
+        if (!note) return;
+        await apiFetch(`/admin/complaints/${complaintId}/notes`, { method: "POST", body: { note } });
+        window.viewComplaintModal(complaintId);
+      });
+
+      // Escalate
+      document.getElementById("btn-escalate")?.addEventListener("click", async () => {
+        if (!confirm("Are you sure you want to escalate this complaint to Commissioner level?")) return;
+        await apiFetch(`/admin/complaints/${complaintId}/escalate`, { method: "PATCH", body: { reason: "Manual escalation by officer." } });
+        hideModal();
+        await loadComplaints();
+      });
+
+      // Save status & assignment
+      document.getElementById("btn-save-all")?.addEventListener("click", async () => {
+        const newStatus = document.getElementById("modal-status-select")?.value;
+        const remarks = document.getElementById("modal-status-remarks")?.value.trim();
+        const proof = document.getElementById("modal-proof-input")?.value.trim();
+        const dept = document.getElementById("modal-dept-select")?.value;
+        const priority = document.getElementById("modal-priority-select")?.value;
+
+        if (dept !== d.department) {
+          await apiFetch(`/admin/complaints/${complaintId}/assign`, {
+            method: "PATCH",
+            body: { department: dept, remarks: `Reassigned to ${dept}` }
+          });
+        }
+
+        if (priority !== d.priority) {
+          await apiFetch(`/admin/complaints/${complaintId}/priority`, {
+            method: "PATCH",
+            body: { priority }
+          });
+        }
+
+        if (newStatus !== d.status || remarks) {
+          if (!remarks || remarks.length < 5) {
+            alert("Mandatory resolution remarks required (min 5 characters).");
+            return;
+          }
+          const stRes = await apiFetch(`/admin/complaints/${complaintId}/status`, {
+            method: "PATCH",
+            body: { status: newStatus, remarks, resolution_proof: proof }
+          });
+          if (!stRes.success) {
+            alert(stRes.error?.message || "Failed to update status.");
+            return;
+          }
+        }
+
+        hideModal();
+        await loadComplaints();
+      });
     } catch (err) {
-      console.error("Status update error:", err);
-      if (alertBox) {
-        alertBox.className = "alert alert-danger mb-3";
-        alertBox.textContent = "Network error while saving grievance decision.";
-        alertBox.classList.remove("d-none");
-      }
-    } finally {
-      if (submitBtn) submitBtn.disabled = false;
-      if (spinner) spinner.classList.add("d-none");
-      if (btnText) btnText.textContent = "Record Resolution";
+      body.innerHTML = `<div class="alert alert-danger">Error retrieving complaint details.</div>`;
     }
-  });
+  };
 }
 
-function showAdminCmpAlert(msg, type = "success") {
-  const alertBox = document.getElementById("admin-cmp-alert");
-  if (!alertBox) return;
-
-  alertBox.className = `alert alert-${type} mb-4`;
-  alertBox.textContent = msg;
-  alertBox.classList.remove("d-none");
-  alertBox.scrollIntoView({ behavior: "smooth", block: "center" });
+function getStatusBadge(status) {
+  const s = status || "Submitted";
+  if (s === "Resolved" || s === "Closed") {
+    return `<span class="badge badge-success">${escapeHtml(s)}</span>`;
+  }
+  if (s === "Under Review" || s === "In Progress" || s === "Assigned") {
+    return `<span class="badge badge-warning">${escapeHtml(s)}</span>`;
+  }
+  if (s === "Rejected") {
+    return `<span class="badge badge-danger">${escapeHtml(s)}</span>`;
+  }
+  return `<span class="badge badge-neutral">${escapeHtml(s)}</span>`;
 }
 
-function getStatusBadgeClass(status) {
-  const s = (status || "").toLowerCase();
-  if (s.includes("approved") || s.includes("completed") || s.includes("resolved")) return "badge-success";
-  if (s.includes("reject")) return "badge-danger";
-  if (s.includes("review") || s.includes("action") || s.includes("progress")) return "badge-warning";
-  return "badge-info";
+function getPriorityBadge(priority) {
+  const p = priority || "Medium";
+  if (p === "Urgent") return `<span class="badge badge-danger">Urgent</span>`;
+  if (p === "High") return `<span class="badge badge-warning">High</span>`;
+  if (p === "Low") return `<span class="badge badge-neutral">Low</span>`;
+  return `<span class="badge badge-info">Medium</span>`;
 }
 
 function escapeHtml(str) {
-  if (!str) return "";
+  if (str === null || str === undefined) return "";
   return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -334,13 +570,3 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-
-document.addEventListener("DOMContentLoaded", async () => {
-  const yearEl = document.getElementById("footer-year");
-  if (yearEl) yearEl.textContent = new Date().getFullYear();
-
-  const isHealthy = await checkDbHealth();
-  updateDbStatusPill(isHealthy);
-
-  await initAdminComplaints();
-});

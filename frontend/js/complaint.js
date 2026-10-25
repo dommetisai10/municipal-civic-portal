@@ -3,7 +3,7 @@
  * Handles citizen complaints, municipal department selection, geolocation, and image proof verification.
  */
 
-import { apiFetch, checkDbHealth, updateDbStatusPill } from "./api.js";
+import { apiFetch, getAuthUser, checkDbHealth, updateDbStatusPill, logoutUser, startDbHealthPolling } from "./api.js";
 
 let selectedImages = [];
 
@@ -39,19 +39,40 @@ async function initComplaintPage() {
   const authCard = document.getElementById("auth-required-card");
   const formContainer = document.getElementById("complaint-form-container");
 
-  // 1. Check Citizen Authentication
+  // 1. Check Citizen Authentication via resilient getAuthUser
   try {
-    const authRes = await apiFetch("/auth/me", { method: "GET" });
-    if (!authRes.success || !authRes.data || authRes.data.role !== "citizen") {
-      if (formContainer) formContainer.classList.add("d-none");
+    const citizen = await getAuthUser();
+    if (!citizen || citizen.role !== "citizen") {
+      if (formContainer) {
+        formContainer.hidden = true;
+        formContainer.setAttribute("hidden", "");
+        formContainer.classList.add("d-none", "hidden");
+        formContainer.style.display = "none";
+      }
       if (authCard) {
-        authCard.classList.remove("d-none");
+        authCard.hidden = false;
+        authCard.removeAttribute("hidden");
+        authCard.classList.remove("d-none", "hidden");
+        authCard.style.display = "";
         const loginLink = document.getElementById("auth-login-link");
-        if (loginLink) loginLink.href = `login.html?returnUrl=${encodeURIComponent(window.location.href)}`;
+        if (loginLink) loginLink.href = `login.html?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`;
       }
       return;
     }
-    updateNavCitizen(authRes.data);
+
+    if (formContainer) {
+      formContainer.hidden = false;
+      formContainer.removeAttribute("hidden");
+      formContainer.classList.remove("d-none", "hidden");
+      formContainer.style.display = "";
+    }
+    if (authCard) {
+      authCard.hidden = true;
+      authCard.setAttribute("hidden", "");
+      authCard.classList.add("d-none", "hidden");
+      authCard.style.display = "none";
+    }
+    updateNavCitizen(citizen);
   } catch (err) {
     console.error("Auth verification failed:", err);
   }
@@ -399,9 +420,17 @@ function showComplaintSuccess(data) {
   const formContainer = document.getElementById("complaint-form-container");
   const successCard = document.getElementById("complaint-success-card");
 
-  if (formContainer) formContainer.classList.add("d-none");
+  if (formContainer) {
+    formContainer.hidden = true;
+    formContainer.setAttribute("hidden", "");
+    formContainer.classList.add("d-none", "hidden");
+    formContainer.style.display = "none";
+  }
   if (successCard) {
-    successCard.classList.remove("d-none");
+    successCard.hidden = false;
+    successCard.removeAttribute("hidden");
+    successCard.classList.remove("d-none", "hidden");
+    successCard.style.display = "";
     const idEl = document.getElementById("success-complaint-id");
     if (idEl) idEl.textContent = data.complaint_id || "MSP-CMP-2026-XXXXXXXX";
 
@@ -451,14 +480,33 @@ function updateNavCitizen(user) {
   const authContainer = document.getElementById("nav-auth-actions");
   if (!authContainer) return;
 
-  authContainer.innerHTML = `
-    <a href="user-dashboard.html" class="btn btn-sm btn-outline">Dashboard</a>
-    <button class="btn btn-sm btn-ghost" id="nav-logout-btn">Sign Out</button>
-  `;
-  document.getElementById("nav-logout-btn")?.addEventListener("click", async () => {
-    await apiFetch("/auth/logout", { method: "POST" });
-    window.location.reload();
-  });
+  function renderGuestNav() {
+    authContainer.innerHTML = `
+      <a href="login.html" class="btn btn-sm btn-outline" id="nav-login-btn">Sign In</a>
+      <a href="register.html" class="btn btn-sm btn-primary" id="nav-register-btn">Register</a>
+    `;
+  }
+
+  if (user && user.authenticated !== false && (user.id || user._id || user.email)) {
+    const isAdmin = user.role === 'admin' || user.role === 'super_admin' || Boolean(user.admin_role);
+    const dashUrl = isAdmin ? 'admin-dashboard.html' : 'user-dashboard.html';
+
+    authContainer.innerHTML = `
+      <a href="${dashUrl}" class="btn btn-sm btn-outline" id="nav-dashboard-btn">Dashboard</a>
+      <button class="btn btn-sm btn-ghost btn-signout" id="nav-logout-btn" title="Sign out of your session">Sign Out</button>
+    `;
+
+    const logoutBtn = document.getElementById("nav-logout-btn");
+    logoutBtn?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await logoutUser({
+        buttonEl: logoutBtn,
+        onImmediate: renderGuestNav
+      });
+    });
+  } else {
+    renderGuestNav();
+  }
 }
 
 function escapeHtml(str) {
@@ -475,8 +523,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const yearEl = document.getElementById("footer-year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  const isHealthy = await checkDbHealth();
-  updateDbStatusPill(isHealthy);
+  startDbHealthPolling(30000);
 
   await initComplaintPage();
 });

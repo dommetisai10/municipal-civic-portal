@@ -1,0 +1,81 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://municipal-service-portal-api.onrender.com/api/:path*"
+    },
+    {
+      "source": "/services",
+      "destination": "/services.html"
+    },
+    {
+      "source": "/services/:slug",
+      "destination": "/apply-service.html"
+    },
+    {
+      "source": "/submit-complaint",
+      "destination": "/submit-complaint.html"
+    },
+    {
+      "source": "/track-status",
+      "destination": "/track-status.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/login.html"
+    },
+    {
+      "source": "/register",
+      "destination": "/register.html"
+    },
+    {
+      "source": "/user-dashboard",
+      "destination": "/user-dashboard.html"
+    },
+    {
+      "source": "/admin-login",
+      "destination": "/admin-login.html"
+    },
+    {
+      "source": "/admin-dashboard",
+      "destination": "/admin-dashboard.html"
+    },
+    {
+      "source": "/service-management",
+      "destination": "/service-management.html"
+    },
+    {
+      "source": "/citizens",
+      "destination": "/citizens.html"
+    },
+    {
+      "source": "/reports",
+      "destination": "/reports.html"
+    },
+    {
+      "source": "/admin-applications",
+      "destination": "/admin-applications.html"
+    },
+    {
+      "source": "/admin-complaints",
+      "destination": "/admin-complaints.html"
+    },
+    {
+      "source": "/admin-audit-logs",
+      "destination": "/admin-audit-logs.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    }
+  ]
+}

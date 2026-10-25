@@ -3,230 +3,334 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reports &amp; Civic Analytics | Municipal Service Portal</title>
-  <meta name="description" content="Municipal Service Portal Administrative Reports and Analytics. Aggregated statistics across civic applications, grievances, and department performance.">
+  <title>Reports &amp; Analytics | Municipal Service Portal</title>
+  <meta name="description" content="Municipal Service Portal Reports and Civic Analytics. Live aggregations across civic service volume, SLA compliance, and departmental performance.">
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
-<body class="dashboard-page admin-body">
-  <!-- Accessibility Skip Link -->
+<body class="admin-body">
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
-  <!-- Top System Status Bar -->
-  <div class="top-notice-bar admin-notice-bar" role="region" aria-label="Administrative System Notice">
-    <div class="container">
-      <div>
-        <span>🔒 Official Municipal Administration Portal — Strict Clean Data Architecture</span>
+  <div class="admin-layout-shell">
+    
+    <!-- Collapsible Sidebar Navigation -->
+    <aside class="admin-sidebar" id="admin-sidebar" aria-label="Administrative Navigation">
+      <div class="admin-sidebar-header">
+        <a href="admin-dashboard.html" class="admin-sidebar-brand">
+          <div class="admin-brand-logo">MSP</div>
+          <div class="admin-brand-info">
+            <span class="admin-brand-title">Municipal Service Portal</span>
+            <span class="admin-brand-subtitle">Control Center</span>
+          </div>
+        </a>
       </div>
-      <div class="db-status-pill" id="db-connection-badge">
-        <span class="status-dot" id="db-status-dot"></span>
-        <span id="db-status-text">Checking database...</span>
+
+      <nav class="admin-sidebar-nav" role="navigation">
+        <a href="admin-dashboard.html" class="sidebar-nav-item" id="nav-overview">
+          <span class="sidebar-icon">📊</span>
+          <span>Overview</span>
+        </a>
+        <a href="admin-applications.html" class="sidebar-nav-item" id="nav-applications">
+          <span class="sidebar-icon">📑</span>
+          <span>Applications</span>
+        </a>
+        <a href="admin-complaints.html" class="sidebar-nav-item" id="nav-grievances">
+          <span class="sidebar-icon">🛠️</span>
+          <span>Grievances</span>
+        </a>
+        <a href="service-management.html" class="sidebar-nav-item" id="nav-services">
+          <span class="sidebar-icon">🏛️</span>
+          <span>Services Catalog</span>
+        </a>
+        <a href="citizens.html" class="sidebar-nav-item" id="nav-citizens">
+          <span class="sidebar-icon">👥</span>
+          <span>Citizens</span>
+        </a>
+        <a href="reports.html" class="sidebar-nav-item active" id="nav-reports">
+          <span class="sidebar-icon">📈</span>
+          <span>Reports & Analytics</span>
+        </a>
+        <a href="admin-audit-logs.html" class="sidebar-nav-item" id="nav-audit">
+          <span class="sidebar-icon">📜</span>
+          <span>Audit Logs</span>
+        </a>
+      </nav>
+
+      <div class="admin-sidebar-footer">
+        <div class="sidebar-status-box" id="db-connection-badge">
+          <span class="status-dot online" id="db-status-dot"></span>
+          <span id="db-status-text">Database Connected</span>
+        </div>
       </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="admin-main-wrapper">
+      
+      <!-- Topbar Header -->
+      <header class="admin-topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" aria-label="Toggle Sidebar Menu">☰</button>
+          <div class="global-search-box">
+            <span class="global-search-icon">🔍</span>
+            <input type="text" id="global-search-input" class="global-search-input" placeholder="Search analytics..." aria-label="Search Reports">
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <div class="admin-profile-menu">
+            <div class="admin-avatar" id="admin-avatar-initials">AD</div>
+            <div class="admin-meta">
+              <span class="admin-name-text" id="admin-user-display">Administrator</span>
+              <span class="admin-role-badge-pill" id="admin-role-display">Portal Admin</span>
+            </div>
+            <button class="btn-signout" id="btn-admin-logout">Sign Out</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content Body -->
+      <main id="main-content" class="admin-content-body">
+        
+        <div class="d-flex justify-content-between align-items-center mb-6 flex-wrap gap-4">
+          <div>
+            <h1 class="text-2xl font-bold text-neutral-900 m-0">Municipal Reports &amp; Civic Analytics</h1>
+            <p class="text-muted text-sm mt-1 m-0">Live database aggregation reports across civic service volume, grievance resolution, and departmental workload.</p>
+          </div>
+          <div class="d-flex gap-3 align-items-center flex-wrap">
+            <div class="date-filter-group" role="group" aria-label="Date Range Filter">
+              <button type="button" class="date-filter-btn" data-range="today">Today</button>
+              <button type="button" class="date-filter-btn" data-range="7d">7 Days</button>
+              <button type="button" class="date-filter-btn active" data-range="30d">30 Days</button>
+              <button type="button" class="date-filter-btn" data-range="all">All Time</button>
+            </div>
+            <button class="btn btn-sm btn-outline" id="btn-print-reports" onclick="window.print()">🖨️ Print</button>
+            <button class="btn btn-sm btn-primary" id="btn-refresh-reports">↻ Refresh</button>
+          </div>
+        </div>
+
+        <!-- Export Center Strip -->
+        <div class="card p-4 mb-6">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+              <span class="text-xs font-bold text-neutral-800 uppercase tracking-wide">Data Exports (CSV):</span>
+              <span class="text-xs text-muted ms-2">Download raw data files for municipal audits and compliance reporting</span>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+              <button class="btn btn-xs btn-outline btn-export" data-type="applications">📑 Applications</button>
+              <button class="btn btn-xs btn-outline btn-export" data-type="complaints">🛠️ Grievances</button>
+              <button class="btn btn-xs btn-outline btn-export" data-type="services">🏛️ Services</button>
+              <button class="btn btn-xs btn-outline btn-export" data-type="citizens">👥 Citizens</button>
+              <button class="btn btn-xs btn-outline btn-export" data-type="sla">⏱️ SLA Compliance</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary KPI Cards -->
+        <div class="metrics-grid mb-6">
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-title">Total Applications</span>
+              <span class="metric-icon">📑</span>
+            </div>
+            <div class="metric-value" id="kpi-total-apps">0</div>
+            <div class="metric-footer">
+              <span class="text-success font-bold" id="kpi-approved-apps">0</span> Approved
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-title">Total Grievances</span>
+              <span class="metric-icon">🛠️</span>
+            </div>
+            <div class="metric-value" id="kpi-total-cmps">0</div>
+            <div class="metric-footer">
+              <span class="text-success font-bold" id="kpi-resolved-cmps">0</span> Resolved
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-title">Active Services</span>
+              <span class="metric-icon">🏛️</span>
+            </div>
+            <div class="metric-value text-primary" id="kpi-active-services">0</div>
+            <div class="metric-footer text-muted">
+              Published in catalog
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-title">Resolution Ratio</span>
+              <span class="metric-icon">📈</span>
+            </div>
+            <div class="metric-value text-success" id="kpi-resolution-rate">0%</div>
+            <div class="metric-footer text-muted">
+              Grievances closed/resolved
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid mb-6">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Applications by Service</h3>
+              <span class="text-xs text-muted">Volume breakdown</span>
+            </div>
+            <div class="chart-canvas-wrapper" style="height: 260px;">
+              <canvas id="chart-report-services"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Applications by Workflow Status</h3>
+              <span class="text-xs text-muted">Distribution</span>
+            </div>
+            <div class="chart-canvas-wrapper" style="height: 260px;">
+              <canvas id="chart-report-status"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Grievances by Department</h3>
+              <span class="text-xs text-muted">Workload analysis</span>
+            </div>
+            <div class="chart-canvas-wrapper" style="height: 260px;">
+              <canvas id="chart-report-cmps-dept"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Grievance Redressal Status</h3>
+              <span class="text-xs text-muted">Fulfillment stages</span>
+            </div>
+            <div class="chart-canvas-wrapper" style="height: 260px;">
+              <canvas id="chart-report-cmps-status"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detailed Breakdown Tables -->
+        <div class="grid grid-2 gap-6 mb-6">
+          
+          <!-- Apps by Service Table -->
+          <div class="data-table-container">
+            <div class="table-header-bar">
+              <h3 class="table-title">Applications by Service</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="admin-data-table">
+                <thead>
+                  <tr>
+                    <th>Municipal Service</th>
+                    <th class="text-right">Volume</th>
+                  </tr>
+                </thead>
+                <tbody id="report-apps-service-tbody">
+                  <tr><td colspan="2" class="text-center py-4 text-muted">Loading metrics...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Apps by Status Table -->
+          <div class="data-table-container">
+            <div class="table-header-bar">
+              <h3 class="table-title">Applications by Status</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="admin-data-table">
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th class="text-right">Count</th>
+                  </tr>
+                </thead>
+                <tbody id="report-apps-status-tbody">
+                  <tr><td colspan="2" class="text-center py-4 text-muted">Loading metrics...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="grid grid-2 gap-6 mb-6">
+          
+          <!-- Grievances by Dept Table -->
+          <div class="data-table-container">
+            <div class="table-header-bar">
+              <h3 class="table-title">Grievances by Department</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="admin-data-table">
+                <thead>
+                  <tr>
+                    <th>Department</th>
+                    <th class="text-right">Filed</th>
+                  </tr>
+                </thead>
+                <tbody id="report-cmps-dept-tbody">
+                  <tr><td colspan="2" class="text-center py-4 text-muted">Loading metrics...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Grievances by Status Table -->
+          <div class="data-table-container">
+            <div class="table-header-bar">
+              <h3 class="table-title">Grievance Status Breakdown</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="admin-data-table">
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th class="text-right">Count</th>
+                  </tr>
+                </thead>
+                <tbody id="report-cmps-status-tbody">
+                  <tr><td colspan="2" class="text-center py-4 text-muted">Loading metrics...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Monthly Trends Table -->
+        <div class="data-table-container mb-6">
+          <div class="table-header-bar">
+            <h3 class="table-title">Historical Civic Activity Inflow</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="admin-data-table">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Applications Submitted</th>
+                  <th>Complaints Filed</th>
+                  <th>Total Transactions</th>
+                </tr>
+              </thead>
+              <tbody id="report-monthly-trend-tbody">
+                <tr><td colspan="4" class="text-center py-4 text-muted">Loading trend analysis...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
     </div>
   </div>
 
-  <!-- Header & Navigation -->
-  <header class="site-header admin-header">
-    <div class="container nav-container">
-      <a href="admin-dashboard.html" class="brand-link">
-        <div class="brand-icon admin-brand-icon">MSP</div>
-        <div class="brand-text">
-          <span class="brand-name">Admin Portal</span>
-          <span class="brand-tagline">Municipal Control Center</span>
-        </div>
-      </a>
-
-      <nav class="admin-top-nav">
-        <a href="admin-dashboard.html" class="nav-link">Overview</a>
-        <a href="admin-applications.html" class="nav-link">Applications</a>
-        <a href="admin-complaints.html" class="nav-link">Grievances</a>
-        <a href="service-management.html" class="nav-link">Services</a>
-        <a href="citizens.html" class="nav-link">Citizens</a>
-        <a href="reports.html" class="nav-link active">Reports</a>
-        <a href="admin-audit-logs.html" class="nav-link">Audit Logs</a>
-      </nav>
-
-      <div class="admin-user-nav">
-        <div class="admin-profile-pill">
-          <span class="admin-role-badge">Admin</span>
-          <span class="admin-email-text" id="admin-user-display">Loading officer...</span>
-        </div>
-        <button class="btn btn-sm btn-outline btn-admin-logout" id="btn-admin-logout">Sign Out</button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <main id="main-content" class="py-6">
-    <div class="container">
-      
-      <!-- Top Banner -->
-      <div class="dashboard-banner mb-6">
-        <div>
-          <h1 class="text-2xl font-bold text-neutral-900">Municipal Reports &amp; Analytics</h1>
-          <p class="text-muted text-sm mt-1">Live database aggregation reports across civic service volume, grievance resolution, and departmental workload.</p>
-        </div>
-        <div class="flex gap-2">
-          <button type="button" class="btn btn-outline" id="btn-print-reports" onclick="window.print()">
-            🖨️ Print Report
-          </button>
-          <button type="button" class="btn btn-primary" id="btn-refresh-reports">
-            🔄 Refresh Live Data
-          </button>
-        </div>
-      </div>
-
-      <!-- KPI Summary Cards -->
-      <div class="metrics-grid mb-8">
-        <div class="metric-card">
-          <div class="metric-header">
-            <span class="metric-title">Total Applications</span>
-            <span class="metric-icon">📑</span>
-          </div>
-          <div class="metric-value font-bold" id="kpi-total-apps">0</div>
-          <div class="metric-footer text-muted text-xs">
-            <span class="text-success font-bold" id="kpi-approved-apps">0</span> Approved
-          </div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-header">
-            <span class="metric-title">Total Grievances</span>
-            <span class="metric-icon">⚠️</span>
-          </div>
-          <div class="metric-value font-bold" id="kpi-total-cmps">0</div>
-          <div class="metric-footer text-muted text-xs">
-            <span class="text-success font-bold" id="kpi-resolved-cmps">0</span> Resolved
-          </div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-header">
-            <span class="metric-title">Active Services</span>
-            <span class="metric-icon">🏛️</span>
-          </div>
-          <div class="metric-value font-bold text-primary" id="kpi-active-services">0</div>
-          <div class="metric-footer text-muted text-xs">
-            Published in citizen catalog
-          </div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-header">
-            <span class="metric-title">Resolution Ratio</span>
-            <span class="metric-icon">📈</span>
-          </div>
-          <div class="metric-value font-bold text-info" id="kpi-resolution-rate">0%</div>
-          <div class="metric-footer text-muted text-xs">
-            Grievances successfully redressed
-          </div>
-        </div>
-      </div>
-
-      <!-- Row 1: Applications Analysis -->
-      <div class="grid grid-2 gap-6 mb-8">
-        <!-- Apps by Service -->
-        <div class="card">
-          <h2 class="text-lg font-bold mb-4">Applications by Service</h2>
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Municipal Service</th>
-                  <th class="text-right">Volume</th>
-                </tr>
-              </thead>
-              <tbody id="report-apps-service-tbody">
-                <tr><td colspan="2" class="text-center py-4 text-muted">Loading metrics...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Apps by Status -->
-        <div class="card">
-          <h2 class="text-lg font-bold mb-4">Applications by Workflow Status</h2>
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Status</th>
-                  <th class="text-right">Applications Count</th>
-                </tr>
-              </thead>
-              <tbody id="report-apps-status-tbody">
-                <tr><td colspan="2" class="text-center py-4 text-muted">Loading metrics...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Row 2: Grievances Analysis -->
-      <div class="grid grid-2 gap-6 mb-8">
-        <!-- Complaints by Department -->
-        <div class="card">
-          <h2 class="text-lg font-bold mb-4">Grievances by Department</h2>
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Department</th>
-                  <th class="text-right">Grievances Filed</th>
-                </tr>
-              </thead>
-              <tbody id="report-cmps-dept-tbody">
-                <tr><td colspan="2" class="text-center py-4 text-muted">Loading metrics...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Complaints by Status -->
-        <div class="card">
-          <h2 class="text-lg font-bold mb-4">Grievance Redressal Status</h2>
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Status</th>
-                  <th class="text-right">Complaints Count</th>
-                </tr>
-              </thead>
-              <tbody id="report-cmps-status-tbody">
-                <tr><td colspan="2" class="text-center py-4 text-muted">Loading metrics...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Row 3: Monthly Trends -->
-      <div class="card mb-8">
-        <h2 class="text-lg font-bold mb-4">Monthly Inflow Trends</h2>
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Month</th>
-                <th>Applications Submitted</th>
-                <th>Complaints Filed</th>
-                <th>Total Civic Activity</th>
-              </tr>
-            </thead>
-            <tbody id="report-monthly-trend-tbody">
-              <tr><td colspan="4" class="text-center py-4 text-muted">Loading trend analysis...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
-  </main>
-
-  <!-- Toast Notification Container -->
-  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
-
-  <!-- JavaScript ES Module -->
   <script type="module" src="js/reports.js"></script>
 </body>
 </html>

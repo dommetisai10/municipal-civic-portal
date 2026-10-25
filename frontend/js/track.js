@@ -3,7 +3,7 @@
  * Fetches real-time workflow status and milestone history for applications and grievances.
  */
 
-import { apiFetch, checkDbHealth, updateDbStatusPill } from "./api.js";
+import { apiFetch, checkDbHealth, updateDbStatusPill, logoutUser, getAuthUser, startDbHealthPolling } from "./api.js";
 
 async function performTrack(rawId) {
   const alertBox = document.getElementById("track-alert");
@@ -220,23 +220,37 @@ async function checkNavAuth() {
   const authContainer = document.getElementById("nav-auth-actions");
   if (!authContainer) return;
 
+  function renderGuestNav() {
+    authContainer.innerHTML = `
+      <a href="login.html" class="btn btn-sm btn-outline" id="nav-login-btn">Sign In</a>
+      <a href="register.html" class="btn btn-sm btn-primary" id="nav-register-btn">Register</a>
+    `;
+  }
+
   try {
-    const res = await apiFetch("/auth/me", { method: "GET" });
-    if (res.success && res.data) {
-      const user = res.data;
-      if (user.role === "citizen") {
-        authContainer.innerHTML = `
-          <a href="user-dashboard.html" class="btn btn-sm btn-outline">Dashboard</a>
-          <button class="btn btn-sm btn-ghost" id="nav-logout-btn">Sign Out</button>
-        `;
-        document.getElementById("nav-logout-btn")?.addEventListener("click", async () => {
-          await apiFetch("/auth/logout", { method: "POST" });
-          window.location.reload();
+    const user = await getAuthUser();
+    if (user && user.authenticated !== false && (user.id || user._id || user.email)) {
+      const isAdmin = user.role === 'admin' || user.role === 'super_admin' || Boolean(user.admin_role);
+      const dashUrl = isAdmin ? 'admin-dashboard.html' : 'user-dashboard.html';
+
+      authContainer.innerHTML = `
+        <a href="${dashUrl}" class="btn btn-sm btn-outline" id="nav-dashboard-btn">Dashboard</a>
+        <button class="btn btn-sm btn-ghost btn-signout" id="nav-logout-btn" title="Sign out of your session">Sign Out</button>
+      `;
+
+      const logoutBtn = document.getElementById('nav-logout-btn');
+      logoutBtn?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await logoutUser({
+          buttonEl: logoutBtn,
+          onImmediate: renderGuestNav
         });
-      }
+      });
+    } else {
+      renderGuestNav();
     }
   } catch {
-    // Unauthenticated user
+    renderGuestNav();
   }
 }
 
@@ -265,9 +279,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // Database connectivity pill
-  const isHealthy = await checkDbHealth();
-  updateDbStatusPill(isHealthy);
+  // Database connectivity pill with 30s background polling
+  startDbHealthPolling(30000);
 
   await checkNavAuth();
 

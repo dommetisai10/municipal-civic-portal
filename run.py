@@ -1,6 +1,6 @@
-"""Municipal Service Portal - Application Entry Point
+"""Municipal Service Portal - Unified Application Server Entry Point.
 
-Runs the unified Flask server hosting both the REST API backend and the
+Starts the full-stack server hosting both the REST API backend and the
 HTML5 / Vanilla CSS / Vanilla JS frontend.
 """
 
@@ -14,7 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from backend.config import Config
-from backend.services.db import check_db_connection, get_db
+from backend.services.db import check_db_connection, sanitize_uri, get_db
 from backend.app import create_app
 
 logging.basicConfig(
@@ -22,6 +22,9 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 logger = logging.getLogger("civic_portal")
+
+# Validate configuration at startup
+Config.validate()
 
 app = create_app()
 
@@ -33,14 +36,21 @@ if __name__ == "__main__":
     # Verify MongoDB connectivity
     is_connected, db_msg = check_db_connection()
     if is_connected:
-        db = get_db()
-        print(f" [+] MongoDB Atlas: CONNECTED (Database: '{db.name}')")
-        services_count = db.services.count_documents({})
-        users_count = db.users.count_documents({})
-        print(f" [+] Active Services Catalog: {services_count} services")
-        print(f" [+] Registered Users in DB:  {users_count} users")
+        try:
+            db = get_db()
+            print(f" [+] MongoDB: CONNECTED (Database: '{db.name}')")
+            services_count = db.services.count_documents({})
+            users_count = db.users.count_documents({})
+            print(f" [+] Active Services Catalog: {services_count} services")
+            print(f" [+] Registered Users in DB:  {users_count} users")
+        except Exception:
+            print(f" [+] MongoDB: CONNECTED ({db_msg})")
     else:
         print(f" [!] MongoDB Warning: {db_msg}")
+        print(" [!] Troubleshooting tip:")
+        print("     1. For MongoDB Atlas: Ensure 0.0.0.0/0 is active under Network Access.")
+        print("     2. For Local MongoDB: Run 'docker compose up -d' or start mongod.")
+        print(f"     Target URI: {sanitize_uri(Config.MONGO_URI)}")
 
     base_url = f"http://{Config.HOST}:{Config.PORT}"
     print("-" * 70)

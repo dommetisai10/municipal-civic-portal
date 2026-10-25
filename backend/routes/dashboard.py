@@ -48,7 +48,7 @@ def get_citizen_dashboard():
             "completed": 0
         }
 
-        pending_statuses = {"Submitted", "Under Review", "Additional Information Required"}
+        pending_statuses = {"Pending", "Submitted", "Under Review", "Additional Information Required", "Action Required"}
 
         for item in app_results:
             status = item.get("_id")

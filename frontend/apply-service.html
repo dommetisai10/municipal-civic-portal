@@ -75,7 +75,7 @@
       </div>
 
       <!-- Auth Required Prompt (shown if not logged in) -->
-      <div id="auth-required-card" class="card card-warning d-none">
+      <div id="auth-required-card" class="card card-warning d-none hidden" hidden style="display: none;">
         <div class="alert-icon">🔒</div>
         <div>
           <h3>Citizen Authentication Required</h3>
@@ -91,7 +91,7 @@
       </div>
 
       <!-- Service Unavailable Banner -->
-      <div id="service-unavailable-card" class="card card-warning d-none">
+      <div id="service-unavailable-card" class="card card-warning d-none hidden" hidden style="display: none;">
         <div class="alert-icon">⚠️</div>
         <div>
           <h3 id="unavailable-service-title">Service Currently Unavailable</h3>
@@ -103,8 +103,16 @@
         </div>
       </div>
 
+      <!-- Service Error / Not Found Banner -->
+      <div id="service-error-card" class="card card-warning d-none hidden text-center py-8" hidden style="display: none;">
+        <div class="alert-icon" id="error-card-icon">❌</div>
+        <h3 id="error-card-title">Service Error</h3>
+        <p class="text-muted mb-4" id="error-card-desc">Could not retrieve service details.</p>
+        <a href="services.html" class="btn btn-outline">← Back to Services Directory</a>
+      </div>
+
       <!-- Main Application Container -->
-      <div id="application-container" class="d-none">
+      <div id="application-container" class="d-none hidden" hidden style="display: none;">
         <!-- Service Overview Header -->
         <div class="card mb-6 service-header-card">
           <div class="service-header-top">
@@ -113,11 +121,24 @@
           </div>
           <h1 class="service-application-title" id="apply-service-name">Service Name</h1>
           <p class="service-application-desc text-muted" id="apply-service-desc">Description</p>
+
+          <!-- Service Fee & SLA Indicators -->
+          <div class="service-meta-row" id="apply-service-meta-row" style="display: flex; gap: 16px; margin-top: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+            <div class="meta-item-box" style="padding: 8px 14px; background: #f0fdf4; border-radius: 6px; border: 1px solid #bbf7d0;">
+              <span class="meta-item-label text-xs text-muted font-bold" style="display: block; text-transform: uppercase; font-size: 0.7rem; color: #15803d;">Statutory Application Fee</span>
+              <span class="meta-item-val font-bold" id="apply-service-fee" style="font-size: 1.15rem; color: #166534;">₹50.00</span>
+            </div>
+            <div class="meta-item-box" style="padding: 8px 14px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
+              <span class="meta-item-label text-xs text-muted font-bold" style="display: block; text-transform: uppercase; font-size: 0.7rem; color: #64748b;">Processing SLA</span>
+              <span class="meta-item-val font-semibold text-neutral-800" id="apply-service-sla" style="font-size: 1rem;">7 Working Days</span>
+            </div>
+          </div>
           
           <!-- Document Checklist Box -->
+          <!-- Document Checklist Box (Driven strictly by Service.requiredDocuments) -->
           <div class="required-docs-checklist-box" id="required-docs-checklist-box">
-            <h4>Checklist of Supporting Documents Required</h4>
-            <p class="text-xs text-muted mb-3">Ensure you have clear digital scans (PDF, JPG, JPEG, PNG, max 5 MB each):</p>
+            <h4 id="checklist-heading">Checklist of Supporting Documents Required</h4>
+            <p class="text-xs text-muted mb-3" id="checklist-subtext">Ensure you have clear digital scans (PDF, JPG, JPEG, PNG, max 5 MB each):</p>
             <ul id="apply-required-docs-list" class="checklist-items"></ul>
           </div>
         </div>
@@ -138,31 +159,14 @@
               <!-- Rendered via apply.js from service.form_schema -->
             </div>
 
-            <div class="form-section-header mt-6">
-              <h3>2. Supporting Document Upload</h3>
-              <p class="text-muted text-xs">Upload copies of your identification, proofs, and certificates. Permitted formats: PDF, JPG, PNG (Max 5 MB each).</p>
+            <div class="form-section-header mt-6" id="upload-section-header">
+              <h3 id="upload-section-title">2. Supporting Document Upload</h3>
+              <p class="text-muted text-xs" id="upload-section-desc">Upload copies of required identification, proofs, or optional supporting files. Permitted formats: PDF, JPG, PNG (Max 5 MB each).</p>
             </div>
 
-            <div class="form-group">
-              <label for="document-files-input" class="form-label font-bold">
-                Select Documents <span class="text-danger">*</span>
-              </label>
-              <div class="file-dropzone" id="file-dropzone">
-                <div class="dropzone-content">
-                  <div class="dropzone-icon">📁</div>
-                  <p class="dropzone-text">Click or drag &amp; drop files here to upload</p>
-                  <p class="text-xs text-muted">Strictly checked: File extensions, MIME types, and binary magic bytes.</p>
-                </div>
-                <input 
-                  type="file" 
-                  id="document-files-input" 
-                  name="documents" 
-                  multiple 
-                  accept=".pdf, .jpg, .jpeg, .png, application/pdf, image/jpeg, image/png"
-                  class="file-input-hidden"
-                >
-              </div>
-              <div id="selected-files-list" class="selected-files-list mt-3"></div>
+            <!-- Dynamic Upload Slots (Controlled strictly by service.requiredDocuments) -->
+            <div id="dynamic-upload-slots" class="upload-slots-container">
+              <!-- Rendered dynamically by apply.js -->
             </div>
 
             <!-- Citizen Declaration Checkbox -->
@@ -191,7 +195,7 @@
       </div>
 
       <!-- Application Success Confirmation Card -->
-      <div id="application-success-card" class="card card-success-confirmation d-none text-center py-8">
+      <div id="application-success-card" class="card card-success-confirmation d-none hidden text-center py-8" hidden style="display: none;">
         <div class="success-icon-large">✓</div>
         <h2>Application Submitted Successfully!</h2>
         <p class="text-muted mb-4">Your municipal application has been recorded in the civic registry with acknowledged status.</p>
@@ -215,9 +219,10 @@
           </div>
         </div>
 
-        <div class="btn-group justify-center">
-          <a href="user-dashboard.html" class="btn btn-primary">Go to Citizen Dashboard</a>
-          <a href="services.html" class="btn btn-outline">Browse Other Services</a>
+        <div class="btn-group justify-center mt-6">
+          <a href="user-dashboard.html" class="btn btn-primary" id="success-dashboard-btn">View My Applications</a>
+          <a href="track-status.html" class="btn btn-outline" id="success-track-btn">Track Status</a>
+          <a href="services.html" class="btn btn-outline">Apply for Another Service</a>
         </div>
       </div>
 

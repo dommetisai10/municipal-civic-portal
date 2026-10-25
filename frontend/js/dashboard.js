@@ -1,6 +1,7 @@
 /**
  * Citizen Dashboard Client Module (ES Module)
- * Fetches live aggregations from /api/dashboard/user and enforces clean empty states.
+ * Fetches live aggregations from /api/dashboard/user, lists full submitted applications
+ * from /api/applications, grievances from /api/complaints/my, and enforces clean empty states.
  */
 
 import { apiRequest, showToast, getAuthUser, logoutUser } from './api.js';
@@ -27,26 +28,38 @@ document.addEventListener('DOMContentLoaded', async () => {
   initLogoutButtons();
   initSystemHealth();
   await loadDashboardData();
+  await loadAllApplications();
+  await loadAllComplaints();
   initProfileForm();
   initPasswordForm();
 });
 
 /**
- * System Health Indicator in Header
+ * System Health Indicator in Header (30-Second Polling)
  */
 async function initSystemHealth() {
   const dot = document.getElementById('db-status-dot');
   const text = document.getElementById('db-status-text');
   if (!dot || !text) return;
 
-  const res = await apiRequest('/health');
-  if (res.ok && res.data && res.data.database === 'connected') {
-    dot.className = 'status-dot online';
-    text.textContent = 'DB Live';
-  } else {
-    dot.className = 'status-dot offline';
-    text.textContent = 'DB Offline';
-  }
+  const poll = async () => {
+    try {
+      const res = await apiRequest('/health');
+      if (res.ok && res.data && res.data.database === 'connected') {
+        dot.className = 'status-dot online';
+        text.textContent = res.data.latency_ms ? `DB Live (${res.data.latency_ms}ms)` : 'DB Live';
+      } else {
+        dot.className = 'status-dot offline';
+        text.textContent = 'DB Offline';
+      }
+    } catch {
+      dot.className = 'status-dot offline';
+      text.textContent = 'DB Offline';
+    }
+  };
+
+  poll();
+  setInterval(poll, 30000);
 }
 
 /**
@@ -95,15 +108,19 @@ function switchSection(sectionName) {
     target.style.display = 'block';
   }
 
-  if (sectionName === 'notifications') {
+  if (sectionName === 'applications') {
+    loadAllApplications();
+  } else if (sectionName === 'complaints') {
+    loadAllComplaints();
+  } else if (sectionName === 'notifications') {
     loadNotifications();
+  } else if (sectionName === 'overview') {
+    loadDashboardData();
   }
 }
 
 /**
- * Loads Live Dashboard Numbers and Tables
- * STRICT CLEAN DATA:
- * If no records exist, counters are 0 and empty-state boxes are rendered.
+ * Loads Live Dashboard Numbers and Recent Tables
  */
 async function loadDashboardData() {
   const res = await apiRequest('/dashboard/user');
@@ -126,14 +143,37 @@ async function loadDashboardData() {
     setText('unread-notif-count', unread);
     setText('sidebar-notif-badge', unread);
 
-    // 4. Render Tables
+    // 4. Render Recent Tables on Overview
     renderApplicationsTable('recent-apps-container', recent_applications, true);
-    renderApplicationsTable('all-apps-container', recent_applications, false);
-
     renderComplaintsTable('recent-cmps-container', recent_complaints, true);
-    renderComplaintsTable('all-cmps-container', recent_complaints, false);
   } else {
     showToast('Failed to load dashboard metrics from database.', 'error');
+  }
+}
+
+/**
+ * Loads All Citizen Applications for the "My Applications" tab
+ */
+async function loadAllApplications() {
+  const container = document.getElementById('all-apps-container');
+  if (!container) return;
+
+  const res = await apiRequest('/applications');
+  if (res.ok && res.success && Array.isArray(res.data)) {
+    renderApplicationsTable('all-apps-container', res.data, false);
+  }
+}
+
+/**
+ * Loads All Citizen Complaints for the "My Complaints" tab
+ */
+async function loadAllComplaints() {
+  const container = document.getElementById('all-cmps-container');
+  if (!container) return;
+
+  const res = await apiRequest('/complaints/my');
+  if (res.ok && res.success && Array.isArray(res.data)) {
+    renderComplaintsTable('all-cmps-container', res.data, false);
   }
 }
 
@@ -393,7 +433,7 @@ function initPasswordForm() {
 }
 
 /**
- * Logout Handlers
+ * Logout Handlers with Back-Button Protection
  */
 function initLogoutButtons() {
   const logoutBtns = [
@@ -403,13 +443,20 @@ function initLogoutButtons() {
 
   logoutBtns.forEach(btn => {
     if (btn) {
-      btn.addEventListener('click', async () => {
-        await logoutUser();
-        showToast('Signed out successfully.', 'info');
-        setTimeout(() => {
-          window.location.href = 'index.html';
-        }, 500);
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await logoutUser({
+          buttonEl: btn,
+          redirect: 'index.html'
+        });
       });
+    }
+  });
+
+  // Prevent browser back button from showing cached authenticated view after sign out
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted && !localStorage.getItem('msp_token')) {
+      window.location.replace('login.html');
     }
   });
 }

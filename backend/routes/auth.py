@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
-from flask import Blueprint, request, session
+from flask import Blueprint, request, session, current_app
 from pymongo.errors import PyMongoError
 from backend.services.db import get_collection
 from backend.services.audit import log_audit
@@ -18,6 +18,7 @@ from backend.utils.security import (
     hash_password,
     verify_password,
     generate_csrf_token,
+    generate_auth_token,
 )
 from backend.middleware.auth import login_required, citizen_required, csrf_protect
 from backend.services.limiter import limiter
@@ -104,12 +105,19 @@ def register():
             ip=request.remote_addr
         )
 
+        secret_key = current_app.config.get("SECRET_KEY", "")
+        auth_token = generate_auth_token(
+            user_id_str, "citizen", secret_key,
+            email=sanitized["email"], full_name=sanitized["full_name"]
+        )
+
         return success_response(
             data={
                 "id": user_id_str,
                 "full_name": sanitized["full_name"],
                 "email": sanitized["email"],
                 "role": "citizen",
+                "token": auth_token,
                 "message": "Registration successful. You can now log in."
             },
             status_code=201
@@ -129,7 +137,7 @@ def register():
 @csrf_protect
 def login():
     """
-    Authenticates a citizen, establishes a server-side session, and sets security cookies.
+    Authenticates a citizen, establishes a server-side session, and sets security cookies and signed token.
     """
     body = request.get_json(silent=True) or {}
     ok_email, email_val = validate_email(body.get("email"))
@@ -170,10 +178,12 @@ def login():
                     status_code=423
                 )
 
-        if not user.get("is_active", True):
+        if not user.get("is_active", True) or user.get("is_deleted", False):
+            suspension_reason = user.get("suspension_reason", "").strip()
+            msg = f"Your account has been suspended by municipal administration. Reason: {suspension_reason}" if suspension_reason else "Your citizen account has been suspended or deactivated. Please contact municipal support."
             return error_response(
-                code="ACCOUNT_DISABLED",
-                message="Your account has been deactivated. Please contact support.",
+                code="ACCOUNT_SUSPENDED",
+                message=msg,
                 status_code=403
             )
 
@@ -216,12 +226,19 @@ def login():
             ip=request.remote_addr
         )
 
+        secret_key = current_app.config.get("SECRET_KEY", "")
+        auth_token = generate_auth_token(
+            str(user["_id"]), "citizen", secret_key,
+            email=user["email"], full_name=user["full_name"]
+        )
+
         return success_response(
             data={
                 "id": str(user["_id"]),
                 "full_name": user["full_name"],
                 "email": user["email"],
                 "role": "citizen",
+                "token": auth_token,
                 "csrf_token": session["csrf_token"],
                 "message": "Login successful."
             },
@@ -267,6 +284,12 @@ def get_current_user():
             session.clear()
             return error_response(code="USER_NOT_FOUND", message="User account not found.", status_code=404)
 
+        secret_key = current_app.config.get("SECRET_KEY", "")
+        auth_token = generate_auth_token(
+            str(user["_id"]), user.get("role", "citizen"), secret_key,
+            email=user.get("email"), full_name=user.get("full_name")
+        )
+
         return success_response(
             data={
                 "id": str(user["_id"]),
@@ -275,6 +298,8 @@ def get_current_user():
                 "mobile": user.get("mobile"),
                 "address": user.get("address"),
                 "role": user.get("role"),
+                "admin_role": user.get("admin_role") or (user.get("role") if user.get("role") in ["admin", "super_admin", "officer", "viewer"] else None),
+                "token": auth_token,
                 "created_at": user.get("created_at").isoformat() if user.get("created_at") else None,
                 "last_login_at": user.get("last_login_at").isoformat() if user.get("last_login_at") else None
             }
@@ -402,4 +427,3 @@ def update_profile():
         })
     except Exception as exc:
         return error_response(code="DATABASE_ERROR", message=str(exc), status_code=503)
-

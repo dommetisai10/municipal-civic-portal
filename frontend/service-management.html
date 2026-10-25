@@ -4,178 +4,113 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Service Catalog Management | Municipal Service Portal</title>
-  <meta name="description" content="Municipal Service Portal Service Catalog Management. Create, edit, toggle availability, and configure application requirements.">
+  <meta name="description" content="Municipal Service Portal Service Catalog Management. Configure civic services, required documents checklist, form fields, and instant availability.">
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="dashboard-page admin-body">
-  <!-- Accessibility Skip Link -->
+<body class="admin-body">
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
-  <!-- Top System Status Bar -->
-  <div class="top-notice-bar admin-notice-bar" role="region" aria-label="Administrative System Notice">
-    <div class="container">
-      <div>
-        <span>🔒 Official Municipal Administration Portal — Strict Clean Data Architecture</span>
+  <div class="admin-layout-shell">
+    
+    <!-- Collapsible Sidebar Navigation -->
+    <aside class="admin-sidebar" id="admin-sidebar" aria-label="Administrative Navigation">
+      <div class="admin-sidebar-header">
+        <a href="admin-dashboard.html" class="admin-sidebar-brand">
+          <div class="admin-brand-logo">MSP</div>
+          <div class="admin-brand-info">
+            <span class="admin-brand-title">Municipal Service Portal</span>
+            <span class="admin-brand-subtitle">Control Center</span>
+          </div>
+        </a>
       </div>
-      <div class="db-status-pill" id="db-connection-badge">
-        <span class="status-dot" id="db-status-dot"></span>
-        <span id="db-status-text">Checking database...</span>
-      </div>
-    </div>
-  </div>
 
-  <!-- Header & Navigation -->
-  <header class="site-header admin-header">
-    <div class="container nav-container">
-      <a href="admin-dashboard.html" class="brand-link">
-        <div class="brand-icon admin-brand-icon">MSP</div>
-        <div class="brand-text">
-          <span class="brand-name">Admin Portal</span>
-          <span class="brand-tagline">Municipal Control Center</span>
-        </div>
-      </a>
-
-      <nav class="admin-top-nav">
-        <a href="admin-dashboard.html" class="nav-link">Overview</a>
-        <a href="admin-applications.html" class="nav-link">Applications</a>
-        <a href="admin-complaints.html" class="nav-link">Grievances</a>
-        <a href="service-management.html" class="nav-link active">Services</a>
-        <a href="citizens.html" class="nav-link">Citizens</a>
-        <a href="reports.html" class="nav-link">Reports</a>
-        <a href="admin-audit-logs.html" class="nav-link">Audit Logs</a>
+      <nav class="admin-sidebar-nav" role="navigation">
+        <a href="admin-dashboard.html" class="sidebar-nav-item" id="nav-overview">
+          <span class="sidebar-icon">📊</span>
+          <span>Overview</span>
+        </a>
+        <a href="admin-applications.html" class="sidebar-nav-item" id="nav-applications">
+          <span class="sidebar-icon">📑</span>
+          <span>Applications</span>
+        </a>
+        <a href="admin-complaints.html" class="sidebar-nav-item" id="nav-grievances">
+          <span class="sidebar-icon">🛠️</span>
+          <span>Grievances</span>
+        </a>
+        <a href="service-management.html" class="sidebar-nav-item active" id="nav-services">
+          <span class="sidebar-icon">🏛️</span>
+          <span>Services Catalog</span>
+        </a>
+        <a href="citizens.html" class="sidebar-nav-item" id="nav-citizens">
+          <span class="sidebar-icon">👥</span>
+          <span>Citizens</span>
+        </a>
+        <a href="reports.html" class="sidebar-nav-item" id="nav-reports">
+          <span class="sidebar-icon">📈</span>
+          <span>Reports & Analytics</span>
+        </a>
+        <a href="admin-audit-logs.html" class="sidebar-nav-item" id="nav-audit">
+          <span class="sidebar-icon">📜</span>
+          <span>Audit Logs</span>
+        </a>
       </nav>
 
-      <div class="admin-user-nav">
-        <div class="admin-profile-pill">
-          <span class="admin-role-badge">Admin</span>
-          <span class="admin-email-text" id="admin-user-display">Loading officer...</span>
+      <div class="admin-sidebar-footer">
+        <div class="sidebar-status-box" id="db-connection-badge">
+          <span class="status-dot online" id="db-status-dot"></span>
+          <span id="db-status-text">Database Connected</span>
         </div>
-        <button class="btn btn-sm btn-outline btn-admin-logout" id="btn-admin-logout">Sign Out</button>
       </div>
-    </div>
-  </header>
+    </aside>
 
-  <!-- Main Content -->
-  <main id="main-content" class="py-6">
-    <div class="container">
+    <!-- Main Content Area -->
+    <div class="admin-main-wrapper">
       
-      <!-- Top Action Bar -->
-      <div class="dashboard-banner mb-6">
-        <div>
-          <h1 class="text-2xl font-bold text-neutral-900">Municipal Services Catalog</h1>
-          <p class="text-muted text-sm mt-1">Configure civic services, update document requirements, and toggle citizen availability.</p>
-        </div>
-        <div>
-          <button type="button" class="btn btn-primary" id="btn-add-service">
-            + Add New Service
-          </button>
-        </div>
-      </div>
-
-      <!-- Alert Notification -->
-      <div id="service-mgmt-alert" class="alert d-none mb-4" role="alert"></div>
-
-      <!-- Search & Category Filters -->
-      <div class="card mb-6">
-        <div class="table-filters-grid">
-          <div class="filter-item">
-            <label for="service-search-input" class="form-label text-xs">Search Services</label>
-            <input 
-              type="text" 
-              id="service-search-input" 
-              class="form-control" 
-              placeholder="Search by name, category, or slug..."
-            >
-          </div>
-          <div class="filter-item">
-            <label for="category-filter" class="form-label text-xs">Category</label>
-            <select id="category-filter" class="form-control">
-              <option value="ALL">All Categories</option>
-              <option value="Civil Registration">Civil Registration</option>
-              <option value="Revenue & Taxation">Revenue &amp; Taxation</option>
-              <option value="Public Works & Utilities">Public Works &amp; Utilities</option>
-              <option value="Commercial & Licensing">Commercial &amp; Licensing</option>
-              <option value="Sanitation & Environment">Sanitation &amp; Environment</option>
-              <option value="General Administration">General Administration</option>
-            </select>
-          </div>
-          <div class="filter-item">
-            <label for="availability-filter" class="form-label text-xs">Availability</label>
-            <select id="availability-filter" class="form-control">
-              <option value="ALL">All Statuses</option>
-              <option value="Available">Available / Active</option>
-              <option value="Unavailable">Unavailable</option>
-            </select>
+      <!-- Topbar Header -->
+      <header class="admin-topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" aria-label="Toggle Sidebar Menu">☰</button>
+          <div class="global-search-box">
+            <span class="global-search-icon">🔍</span>
+            <input type="text" id="global-search-input" class="global-search-input" placeholder="Search catalog services..." aria-label="Search Services">
           </div>
         </div>
-      </div>
 
-      <!-- Services Table Card -->
-      <div class="card">
-        <div class="card-header flex-between mb-4">
-          <div>
-            <h2 class="text-lg font-bold">Catalog Directory</h2>
-            <span class="text-xs text-muted" id="services-count-text">Loading catalog...</span>
-          </div>
-          <button type="button" class="btn btn-sm btn-outline" id="btn-refresh-services">
-            🔄 Refresh
-          </button>
-        </div>
-
-        <div class="table-responsive">
-          <table class="data-table" id="services-table">
-            <thead>
-              <tr>
-                <th>Service Name &amp; Slug</th>
-                <th>Category</th>
-                <th>Required Docs</th>
-                <th>Processing Time</th>
-                <th>Fee</th>
-                <th>Citizen Applications</th>
-                <th>Availability</th>
-                <th class="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="services-table-body">
-              <tr>
-                <td colspan="8" class="text-center py-6 text-muted">
-                  Loading services from MongoDB...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <!-- Add / Edit Service Modal -->
-  <div id="service-form-modal" class="modal-backdrop d-none" role="dialog" aria-modal="true" aria-labelledby="service-modal-title">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-header">
-        <h2 class="modal-title" id="service-modal-title">Add Municipal Service</h2>
-        <button type="button" class="btn-close-modal" id="modal-service-close" aria-label="Close">×</button>
-      </div>
-      <form id="service-form">
-        <div class="modal-body">
-          <input type="hidden" id="service-form-mode" value="create">
-          <input type="hidden" id="service-form-orig-slug" value="">
-
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label for="service-name-input" class="form-label">Service Name <span class="text-danger">*</span></label>
-              <input type="text" id="service-name-input" class="form-control" placeholder="e.g. Birth Certificate Issuance" required minlength="3">
+        <div class="topbar-right">
+          <div class="admin-profile-menu">
+            <div class="admin-avatar" id="admin-avatar-initials">AD</div>
+            <div class="admin-meta">
+              <span class="admin-name-text" id="admin-user-display">Administrator</span>
+              <span class="admin-role-badge-pill" id="admin-role-display">Portal Admin</span>
             </div>
-            <div class="form-group flex-1">
-              <label for="service-slug-input" class="form-label">URL Slug (e.g. birth-certificate)</label>
-              <input type="text" id="service-slug-input" class="form-control" placeholder="Auto-generated if left blank">
-            </div>
+            <button class="btn-signout" id="btn-admin-logout">Sign Out</button>
           </div>
+        </div>
+      </header>
 
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label for="service-category-input" class="form-label">Category <span class="text-danger">*</span></label>
-              <select id="service-category-input" class="form-control" required>
+      <!-- Main Content Body -->
+      <main id="main-content" class="admin-content-body">
+        
+        <div class="admin-page-header-row mb-6">
+          <div class="admin-header-title-box">
+            <h1 class="text-2xl font-bold text-neutral-900 m-0">Municipal Services Catalog Management</h1>
+            <p class="text-muted text-sm mt-1 m-0">Single source of truth for civic service availability, document checklists, and application schema.</p>
+          </div>
+          <div class="admin-header-actions-box">
+            <button class="btn btn-sm btn-outline" id="btn-refresh-services">↻ Refresh</button>
+            <button class="btn btn-sm btn-primary" id="btn-add-service">+ Add New Service</button>
+          </div>
+        </div>
+
+        <!-- Filter Controls Bar -->
+        <div class="card p-4 mb-4">
+          <div class="d-flex gap-4 flex-wrap align-items-center">
+            <div class="flex-1" style="min-width: 240px;">
+              <input type="search" id="service-search-input" class="form-control" placeholder="Search by name, department, or slug...">
+            </div>
+            <div style="min-width: 180px;">
+              <select id="category-filter" class="form-select" aria-label="Filter by service category">
+                <option value="ALL">All Categories</option>
                 <option value="Civil Registration">Civil Registration</option>
                 <option value="Revenue & Taxation">Revenue &amp; Taxation</option>
                 <option value="Public Works & Utilities">Public Works &amp; Utilities</option>
@@ -184,54 +119,295 @@
                 <option value="General Administration">General Administration</option>
               </select>
             </div>
-            <div class="form-group flex-1">
-              <label for="service-avail-input" class="form-label">Availability <span class="text-danger">*</span></label>
-              <select id="service-avail-input" class="form-control" required>
-                <option value="Available">Available</option>
+            <div style="min-width: 170px;">
+              <select id="department-filter" class="form-select" aria-label="Filter by department">
+                <option value="ALL">All Departments</option>
+              </select>
+            </div>
+            <div style="min-width: 160px;">
+              <select id="availability-filter" class="form-select" aria-label="Filter by availability status">
+                <option value="ALL">All Availability</option>
+                <option value="Available">Available (Active)</option>
+                <option value="Unavailable">Unavailable</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Chips Bar (Dynamically Rendered) -->
+        <div id="filter-chips-bar" class="filter-chips-bar d-none">
+          <span class="filter-chips-label">Active Filters:</span>
+          <div id="filter-chips-container" class="d-flex gap-2 flex-wrap align-items-center"></div>
+          <button type="button" class="btn-clear-all-filters" id="btn-clear-filters">Clear All</button>
+        </div>
+
+        <!-- Alert Container -->
+        <div id="service-mgmt-alert" class="alert d-none mb-4" role="alert"></div>
+
+        <!-- Services Table Container -->
+        <div class="data-table-container">
+          <div class="table-header-bar">
+            <div>
+              <h2 class="table-title">Catalog Services (<span id="services-count-text">0</span>)</h2>
+              <span class="text-xs text-muted">Availability state immediately impacts citizen application submission</span>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="admin-data-table" aria-label="Municipal Services Catalog Table">
+              <thead>
+                <tr>
+                  <th scope="col">Service Name &amp; Slug</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Department</th>
+                  <th scope="col">SLA Days</th>
+                  <th scope="col">Fee (₹)</th>
+                  <th scope="col">Applications</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="services-table-body">
+                <tr>
+                  <td colspan="8" class="text-center py-6 text-muted">Retrieving catalog records from database...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Bar -->
+          <div class="pagination-bar" id="services-pagination-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-top: 1px solid var(--neutral-200); background: #fafafa;">
+            <div class="pagination-info text-xs text-muted" id="services-pagination-info">Showing records...</div>
+            <div class="d-flex gap-2 align-items-center">
+              <button type="button" class="btn btn-sm btn-outline" id="btn-services-prev-page" disabled>Previous</button>
+              <span class="text-xs font-bold px-2" id="services-current-page-text">Page 1</span>
+              <button type="button" class="btn btn-sm btn-outline" id="btn-services-next-page" disabled>Next</button>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Service Detail View / Drawer Modal -->
+  <div class="modal-backdrop d-none" id="service-detail-modal" role="dialog" aria-modal="true" aria-labelledby="modal-detail-title">
+    <div class="modal-card" style="max-width: 880px;">
+      <div class="modal-header">
+        <div>
+          <h2 class="text-lg font-bold text-neutral-900" id="modal-detail-title">Service Details</h2>
+          <span class="text-xs text-muted" id="modal-detail-slug">Slug: -</span>
+        </div>
+        <button class="modal-close-btn" id="modal-detail-close" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body p-6">
+        
+        <!-- Service Header Banner -->
+        <div class="card p-4 mb-4 bg-surface-muted">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-4">
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <h3 class="text-lg font-bold text-neutral-900 m-0" id="detail-name">-</h3>
+                <span id="detail-avail-badge" class="badge badge-success">Available</span>
+              </div>
+              <p class="text-xs text-muted m-0" id="detail-meta">-</p>
+              <p class="text-xs text-muted mt-1 m-0" id="detail-desc">-</p>
+              <div id="detail-reason-box" class="alert alert-warning text-xs mt-2 d-none">
+                <strong>Unavailable Notice:</strong> <span id="detail-reason-text"></span>
+              </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+              <button type="button" class="btn btn-xs btn-outline" id="detail-btn-toggle-avail">Toggle Status</button>
+              <button type="button" class="btn btn-xs btn-outline" id="detail-btn-edit">Edit Service</button>
+              <button type="button" class="btn btn-xs btn-outline" id="detail-btn-dup">Duplicate</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3-Column Service Performance Metrics -->
+        <div class="d-flex gap-4 mb-4 flex-wrap">
+          <div class="card p-3 flex-1 text-center" style="min-width: 160px; background: #fff5f5; border-color: #fecaca;">
+            <div class="text-xs font-bold text-neutral-500 uppercase">Total Applications</div>
+            <div class="text-2xl font-bold text-neutral-900 mt-1" id="detail-stat-total-apps">0</div>
+          </div>
+          <div class="card p-3 flex-1 text-center" style="min-width: 160px; background: #f0fdf4; border-color: #bbf7d0;">
+            <div class="text-xs font-bold text-neutral-500 uppercase">Approval Rate</div>
+            <div class="text-2xl font-bold text-success mt-1" id="detail-stat-approval-rate">0%</div>
+          </div>
+          <div class="card p-3 flex-1 text-center" style="min-width: 160px; background: #fefce8; border-color: #fef08a;">
+            <div class="text-xs font-bold text-neutral-500 uppercase">Avg Processing Time</div>
+            <div class="text-2xl font-bold text-warning mt-1" id="detail-stat-avg-days">0 d</div>
+          </div>
+        </div>
+
+        <!-- Specifications Breakdown -->
+        <div class="d-flex gap-4 mb-4 flex-wrap">
+          <div class="card p-4 flex-1" style="min-width: 280px;">
+            <h4 class="text-xs font-bold uppercase text-neutral-500 mb-2">Required Documents Checklist</h4>
+            <div id="detail-docs-list" class="text-sm"></div>
+          </div>
+          <div class="card p-4 flex-1" style="min-width: 280px;">
+            <h4 class="text-xs font-bold uppercase text-neutral-500 mb-2">Application Form Schema</h4>
+            <div id="detail-fields-list" class="text-sm"></div>
+          </div>
+        </div>
+
+        <!-- Recent Applications Table for this Service -->
+        <div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4 class="text-xs font-bold uppercase text-neutral-500 m-0">Recent Citizen Submissions</h4>
+            <a href="admin-applications.html" id="detail-btn-view-all-apps" class="btn btn-xs btn-primary" style="text-decoration: none;">View All Applications &rarr;</a>
+          </div>
+          <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+            <table class="admin-data-table">
+              <thead>
+                <tr>
+                  <th>Application ID</th>
+                  <th>Applicant</th>
+                  <th>Status</th>
+                  <th>Submitted Date</th>
+                </tr>
+              </thead>
+              <tbody id="detail-recent-apps-tbody">
+                <tr><td colspan="4" class="text-center py-4 text-muted">No applications on file for this service.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-outline" id="modal-detail-cancel">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Service Create / Edit Modal -->
+  <div class="modal-backdrop d-none" id="service-form-modal" role="dialog" aria-modal="true" aria-labelledby="modal-service-title">
+    <div class="modal-card" style="max-width: 800px;">
+      <div class="modal-header">
+        <div>
+          <h2 class="text-lg font-bold text-neutral-900" id="modal-service-title">Add New Service</h2>
+          <span class="text-xs text-muted">Configure municipal service particulars, checklist, and schema</span>
+        </div>
+        <button class="modal-close-btn" id="modal-service-close" aria-label="Close modal">✕</button>
+      </div>
+      <form id="service-form">
+        <div class="modal-body p-6" style="max-height: 70vh; overflow-y: auto;">
+          <div class="d-flex gap-4 mb-4 flex-wrap">
+            <div class="flex-1" style="min-width: 240px;">
+              <label class="form-label text-xs font-bold uppercase">Service Name *</label>
+              <input type="text" id="service-name-input" class="form-control" placeholder="e.g. Birth Certificate" required minlength="3">
+            </div>
+            <div class="flex-1" style="min-width: 240px;">
+              <label class="form-label text-xs font-bold uppercase">Slug (Unique identifier)</label>
+              <input type="text" id="service-slug-input" class="form-control" placeholder="auto-generated-if-blank">
+            </div>
+          </div>
+
+          <div class="d-flex gap-4 mb-4 flex-wrap">
+            <div class="flex-1" style="min-width: 240px;">
+              <label class="form-label text-xs font-bold uppercase">Category *</label>
+              <select id="service-category-input" class="form-select" required>
+                <option value="Civil Registration">Civil Registration</option>
+                <option value="Revenue & Taxation">Revenue &amp; Taxation</option>
+                <option value="Public Works & Utilities">Public Works &amp; Utilities</option>
+                <option value="Commercial & Licensing">Commercial &amp; Licensing</option>
+                <option value="Sanitation & Environment">Sanitation &amp; Environment</option>
+                <option value="General Administration">General Administration</option>
+              </select>
+            </div>
+            <div class="flex-1" style="min-width: 240px;">
+              <label class="form-label text-xs font-bold uppercase">Department</label>
+              <input type="text" id="service-dept-input" class="form-control" placeholder="e.g. Public Health & Sanitation">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label text-xs font-bold uppercase">Service Description *</label>
+            <textarea id="service-desc-input" class="form-control" rows="2" placeholder="Full service description visible to citizens during application..." required minlength="10"></textarea>
+          </div>
+
+          <div class="d-flex gap-4 mb-4 flex-wrap">
+            <div class="flex-1" style="min-width: 140px;">
+              <label class="form-label text-xs font-bold uppercase">SLA Days</label>
+              <input type="number" id="service-sla-input" class="form-control" value="7" min="1" max="90">
+            </div>
+            <div class="flex-1" style="min-width: 140px;">
+              <label class="form-label text-xs font-bold uppercase">Statutory Fee (₹)</label>
+              <input type="number" id="service-fee-input" class="form-control" value="0" min="0">
+            </div>
+            <div class="flex-1" style="min-width: 160px;">
+              <label class="form-label text-xs font-bold uppercase">Availability</label>
+              <select id="service-availability-input" class="form-select">
+                <option value="Available">Available (Active)</option>
                 <option value="Unavailable">Unavailable</option>
               </select>
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label for="service-processing-input" class="form-label">Processing Days</label>
-              <input type="number" id="service-processing-input" class="form-control" value="7" min="1" max="90">
+          <!-- Document Checklist Builder -->
+          <div class="card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h4 class="text-xs font-bold uppercase text-neutral-800 m-0">Required Documents Checklist</h4>
+                <span class="text-xs text-muted">Citizens must attach these files before submission</span>
+              </div>
+              <button type="button" class="btn btn-xs btn-outline" id="btn-add-doc-field">+ Add Document</button>
             </div>
-            <div class="form-group flex-1">
-              <label for="service-fee-input" class="form-label">Statutory Fee ($)</label>
-              <input type="number" id="service-fee-input" class="form-control" value="0" min="0" step="0.5">
-            </div>
+            <div id="required-docs-container" class="d-flex flex-column gap-2"></div>
           </div>
 
-          <div class="form-group">
-            <label for="service-desc-input" class="form-label">Description <span class="text-danger">*</span></label>
-            <textarea id="service-desc-input" class="form-control" rows="3" placeholder="Explain the purpose, guidelines, and eligibility for this municipal service..." required></textarea>
+          <!-- Dynamic Form Fields Builder -->
+          <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h4 class="text-xs font-bold uppercase text-neutral-800 m-0">Application Form Fields (Dynamic Schema)</h4>
+                <span class="text-xs text-muted">Configures the input fields rendered to applicants</span>
+              </div>
+              <button type="button" class="btn btn-xs btn-outline" id="btn-add-form-field">+ Add Field</button>
+            </div>
+            <div id="form-fields-container" class="d-flex flex-column gap-2"></div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Required Supporting Documents</label>
-            <div class="text-xs text-muted mb-2">Specify physical proofs citizens must upload with this application.</div>
-            <div id="docs-inputs-container" class="docs-inputs-container">
-              <!-- Dynamically populated document inputs -->
-            </div>
-            <button type="button" class="btn btn-sm btn-outline mt-2" id="btn-add-doc-field">
-              + Add Document Requirement
-            </button>
-          </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline" id="modal-service-cancel">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="modal-service-submit">Save Service</button>
+          <button type="button" class="btn btn-sm btn-outline" id="modal-service-cancel">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-primary" id="btn-save-service">Save Service</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Toast Notification Container -->
-  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+  <!-- Availability Toggle Modal (With Optional Reason) -->
+  <div class="modal-backdrop d-none" id="service-avail-modal" role="dialog" aria-modal="true" aria-labelledby="modal-avail-title">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2 class="text-lg font-bold text-neutral-900" id="modal-avail-title">Update Service Availability</h2>
+        <button class="modal-close-btn" id="modal-avail-close" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body p-6">
+        <p class="text-sm text-neutral-700 mb-3" id="modal-avail-desc">
+          Changing service availability instantly updates the citizen catalog.
+        </p>
+        <div class="mb-4">
+          <label class="form-label text-xs font-bold uppercase">New Status</label>
+          <select id="avail-status-select" class="form-select">
+            <option value="Available">Available (Citizen applications open)</option>
+            <option value="Unavailable">Unavailable (Temporarily suspended)</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label text-xs font-bold uppercase">Public Reason / Notice Message (Optional)</label>
+          <textarea id="avail-reason-input" class="form-control" rows="2" placeholder="e.g. Annual audit in progress, server maintenance, seasonal service closure..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-outline" id="modal-avail-cancel">Cancel</button>
+        <button type="button" class="btn btn-sm btn-primary" id="btn-confirm-avail">Save Availability</button>
+      </div>
+    </div>
+  </div>
 
-  <!-- JavaScript ES Module -->
   <script type="module" src="js/service-management.js"></script>
 </body>
 </html>

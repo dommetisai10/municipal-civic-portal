@@ -174,6 +174,8 @@ def submit_application():
             "form_data": form_data,
             "documents": uploaded_docs,
             "status": "Submitted",
+            "fee": float(service.get("fee", 0)),
+            "payment_status": "Paid" if float(service.get("fee", 0)) == 0 else "Pending",
             "certificate_status": "Issuance not supported",
             "status_history": [
                 {
@@ -256,10 +258,13 @@ def submit_application():
 def get_my_applications():
     """Returns all applications submitted by the logged-in citizen."""
     try:
-        user_id = ObjectId(session["user_id"])
-        apps_col = get_collection("applications")
+        user_id_str = session.get("user_id")
+        match_ids = [user_id_str]
+        if ObjectId.is_valid(user_id_str):
+            match_ids.append(ObjectId(user_id_str))
 
-        cursor = apps_col.find({"user_id": user_id}).sort("created_at", -1)
+        apps_col = get_collection("applications")
+        cursor = apps_col.find({"user_id": {"$in": match_ids}}).sort("created_at", -1)
         results = []
         for doc in cursor:
             results.append({
@@ -268,6 +273,8 @@ def get_my_applications():
                 "service_slug": doc.get("service_slug"),
                 "category": doc.get("category", "General"),
                 "status": doc.get("status", "Submitted"),
+                "fee": doc.get("fee", 0),
+                "payment_status": doc.get("payment_status", "Paid" if doc.get("fee", 0) == 0 else "Pending"),
                 "certificate_status": doc.get("certificate_status", "Issuance not supported"),
                 "documents_count": len(doc.get("documents", [])),
                 "created_at": doc.get("created_at").isoformat() if isinstance(doc.get("created_at"), datetime) else str(doc.get("created_at")),
@@ -326,6 +333,8 @@ def get_application_detail(application_id):
             "service_slug": doc.get("service_slug"),
             "category": doc.get("category"),
             "status": doc.get("status"),
+            "fee": doc.get("fee", 0),
+            "payment_status": doc.get("payment_status", "Paid" if doc.get("fee", 0) == 0 else "Pending"),
             "certificate_status": doc.get("certificate_status", "Issuance not supported"),
             "form_data": doc.get("form_data", {}),
             "documents": safe_documents,

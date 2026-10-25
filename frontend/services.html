@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Municipal Services Directory | Municipal Service Portal</title>
-  <meta name="description" content="Browse available municipal citizen services, document requirements, and apply online through the official Municipal Service Portal.">
+  <meta name="description" content="Browse available municipal citizen services, document requirements, statutory fees, SLA processing times, and apply online through the official Municipal Service Portal.">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -41,7 +41,7 @@
 
       <nav class="main-nav" id="main-nav" aria-label="Main Navigation">
         <ul class="nav-links">
-          <li><a href="index.html" class="nav-link" id="nav-link-home">Home</a></li>
+          <li><a href="index.html#home" class="nav-link" id="nav-link-home">Home</a></li>
           <li><a href="services.html" class="nav-link active" id="nav-link-services">Services</a></li>
           <li><a href="submit-complaint.html" class="nav-link" id="nav-link-complaint">Submit Complaint</a></li>
           <li><a href="track-status.html" class="nav-link" id="nav-link-track">Track Status</a></li>
@@ -61,10 +61,10 @@
     <section class="page-header-strip">
       <div class="container">
         <div class="page-header-content">
-          <span class="badge badge-info">Civic Services Directory</span>
+          <span class="badge badge-category">Civic Services Directory</span>
           <h1>Municipal Services &amp; Applications</h1>
           <p class="subtitle">
-            Explore citizen services provided by your local administration. View eligibility guidelines, checklist of required documents, and submit applications online.
+            Explore citizen services provided by your local administration. View eligibility guidelines, checklist of required documents, statutory fees, processing SLAs, and submit authenticated applications online.
           </p>
         </div>
       </div>
@@ -83,14 +83,14 @@
                 type="search" 
                 id="service-search-input" 
                 class="form-control search-input" 
-                placeholder="Search services by keyword, category, or document..." 
+                placeholder="Search services by keyword, department, or required document..." 
                 aria-label="Search municipal services"
               >
             </div>
             <div class="category-select-wrapper">
               <label for="category-filter-select" class="sr-only">Filter by Department/Category</label>
               <select id="category-filter-select" class="form-control">
-                <option value="ALL">All Categories</option>
+                <option value="ALL">All Categories &amp; Departments</option>
                 <option value="Civil Registration">Civil Registration</option>
                 <option value="Revenue & Taxation">Revenue &amp; Taxation</option>
                 <option value="Commercial & Licensing">Commercial &amp; Licensing</option>
@@ -116,9 +116,9 @@
         <!-- Services Grid -->
         <div class="services-grid" id="services-grid" aria-live="polite">
           <!-- Dynamically populated by services.js -->
-          <div class="loading-state-card">
+          <div class="loading-state-card" style="grid-column: 1 / -1;">
             <div class="spinner"></div>
-            <p>Fetching official municipal services...</p>
+            <p class="mt-4 text-muted">Fetching official municipal services from database...</p>
           </div>
         </div>
 
@@ -126,8 +126,46 @@
     </section>
   </main>
 
+  <!-- Service Detail Interactive Modal -->
+  <div id="service-detail-modal" class="modal-backdrop d-none" role="dialog" aria-modal="true" aria-labelledby="modal-service-name">
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <div>
+          <span class="badge badge-category" id="modal-service-category">Category</span>
+          <h2 class="modal-title mt-1" id="modal-service-name">Service Name</h2>
+        </div>
+        <button type="button" class="btn-close-modal" id="modal-close-btn" aria-label="Close modal">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="text-secondary mb-4" id="modal-service-desc"></p>
+        <div class="service-meta-grid mb-4">
+          <div class="meta-item">
+            <span class="meta-label">Processing SLA</span>
+            <span class="meta-val" id="modal-service-processing">7 Working Days</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Statutory Fee</span>
+            <span class="meta-val fee-highlight" id="modal-service-fee">Free of Charge</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Availability</span>
+            <span class="meta-val" id="modal-service-status">Available</span>
+          </div>
+        </div>
+        <div class="mb-4">
+          <h4 class="text-sm font-bold mb-2">Checklist of Required Supporting Documents:</h4>
+          <ul class="modal-doc-list" id="modal-service-docs"></ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="modal-cancel-btn">Close</button>
+        <button type="button" class="btn btn-primary" id="modal-apply-btn">Apply Online &rarr;</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Site Footer -->
-  <footer class="site-footer">
+  <footer class="site-footer" role="contentinfo">
     <div class="container footer-bottom">
       <p>&copy; <span id="footer-year">2026</span> <span class="dynamic-portal-name">Municipal Service Portal</span>. All rights reserved.</p>
       <p class="footer-note">Clean Architecture &amp; Database Backed Civic Information System.</p>

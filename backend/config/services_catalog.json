@@ -5,6 +5,7 @@
     "category": "Civil Registration",
     "description": "Issuance of official birth certificate registration for newborns and citizens born within the municipal boundaries.",
     "availability": "Available",
+    "fee": 50,
     "required_documents": [
       "Hospital Birth Report / Discharge Summary",
       "Parents' Government Photo ID Proof (e.g. Aadhaar/Passport)",

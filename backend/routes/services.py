@@ -26,7 +26,11 @@ def get_services():
                 "id": str(doc["_id"]),
                 "slug": doc.get("slug", ""),
                 "name": doc.get("name", ""),
+                "category": doc.get("category", "General"),
+                "department": doc.get("department", doc.get("category", "General Administration")),
                 "description": doc.get("description", ""),
+                "fee": doc.get("fee", 0),
+                "processing_days": doc.get("processing_days", 7),
                 "availability": doc.get("availability", "Unavailable"),
                 "required_documents": doc.get("required_documents", []),
                 "form_schema": doc.get("form_schema", [])
@@ -58,7 +62,11 @@ def get_service_detail(service_identifier):
             "id": str(doc["_id"]),
             "slug": doc.get("slug", ""),
             "name": doc.get("name", ""),
+            "category": doc.get("category", "General"),
+            "department": doc.get("department", doc.get("category", "General Administration")),
             "description": doc.get("description", ""),
+            "fee": doc.get("fee", 0),
+            "processing_days": doc.get("processing_days", 7),
             "availability": doc.get("availability", "Unavailable"),
             "required_documents": doc.get("required_documents", []),
             "form_schema": doc.get("form_schema", [])

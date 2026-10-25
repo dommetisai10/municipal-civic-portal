@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Municipal Service Portal | Civic Services & Grievance Redressal</title>
-  <meta name="description" content="Municipal Service Portal for citizen service applications, grievance redressal, and real-time public status tracking. Clean data architecture with verified database backing.">
+  <title>Municipal Service Portal | Civic Services &amp; Grievance Redressal</title>
+  <meta name="description" content="Official Municipal Service Portal for citizen service applications, grievance redressal, and real-time public status tracking. Red and white civic design architecture backed by live database services.">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -24,10 +24,10 @@
     </div>
   </div>
 
-  <!-- Header & Navigation -->
+  <!-- Header & In-Page Navigation -->
   <header class="site-header">
     <div class="container nav-container">
-      <a href="index.html" class="brand-link" id="brand-home-link" aria-label="Municipal Service Portal Home">
+      <a href="#home" class="brand-link" id="brand-home-link" aria-label="Municipal Service Portal Home">
         <div class="brand-icon" aria-hidden="true">MSP</div>
         <div class="brand-text">
           <span class="brand-name dynamic-portal-name">Municipal Service Portal</span>
@@ -41,11 +41,10 @@
 
       <nav class="main-nav" id="main-nav" aria-label="Main Navigation">
         <ul class="nav-links">
-          <li><a href="index.html" class="nav-link active" id="nav-link-home">Home</a></li>
-          <li><a href="#services-section" class="nav-link" id="nav-link-services">Services</a></li>
-          <li><a href="submit-complaint.html" class="nav-link" id="nav-link-complaint">Submit Complaint</a></li>
-          <li><a href="track-status.html" class="nav-link" id="nav-link-track">Track Status</a></li>
-          <li><a href="#contact-section" class="nav-link" id="nav-link-contact">Contact</a></li>
+          <li><a href="#home" class="nav-link active" id="nav-link-home">Home</a></li>
+          <li><a href="#about" class="nav-link" id="nav-link-about">About</a></li>
+          <li><a href="#services" class="nav-link" id="nav-link-services">Services</a></li>
+          <li><a href="#contact" class="nav-link" id="nav-link-contact">Contact</a></li>
         </ul>
 
         <div class="nav-actions" id="nav-auth-actions">
@@ -59,8 +58,8 @@
 
   <!-- Main Content -->
   <main id="main-content">
-    <!-- Hero Section -->
-    <section class="hero-section" id="hero-section" aria-labelledby="hero-heading">
+    <!-- Hero Section (#home) -->
+    <section class="hero-section" id="home" aria-labelledby="hero-heading">
       <div class="container">
         <div class="hero-content">
           <div class="hero-badge">
@@ -71,7 +70,7 @@
             Apply online for municipal certificates and permits, file civic complaints with live photographic evidence, and track processing transparency in real-time.
           </p>
           <div class="hero-cta-group">
-            <a href="#services-section" class="btn btn-primary btn-lg" id="hero-apply-btn">Apply for a Service</a>
+            <a href="#services" class="btn btn-primary btn-lg" id="hero-apply-btn">Apply for a Service</a>
             <a href="submit-complaint.html" class="btn btn-secondary btn-lg" id="hero-complaint-btn">Lodge a Complaint</a>
             <a href="track-status.html" class="btn btn-outline btn-lg" id="hero-track-btn">Track Status</a>
           </div>
@@ -90,7 +89,7 @@
             <p class="action-card-desc">
               Birth and death certificates, property tax requests, trade licenses, building permissions, and water connections.
             </p>
-            <a href="#services-section" class="btn btn-sm btn-secondary" id="action-browse-services-btn">Browse Catalog &rarr;</a>
+            <a href="#services" class="btn btn-sm btn-secondary" id="action-browse-services-btn">Browse Catalog &rarr;</a>
           </article>
 
           <!-- Card 2 -->
@@ -116,8 +115,8 @@
       </div>
     </section>
 
-    <!-- How It Works Section (4 Steps per specification) -->
-    <section class="section" id="how-it-works-section" aria-labelledby="how-it-works-heading">
+    <!-- About & How It Works Section (#about) -->
+    <section class="section" id="about" aria-labelledby="how-it-works-heading">
       <div class="container">
         <div class="section-header">
           <span class="section-badge">Simple &amp; Transparent</span>
@@ -161,8 +160,8 @@
       </div>
     </section>
 
-    <!-- Dynamic Services Catalog Section -->
-    <section class="section" id="services-section" aria-labelledby="services-catalog-heading" style="background-color: var(--white); scroll-margin-top: 80px;">
+    <!-- Dynamic Services Catalog Section (#services) -->
+    <section class="section" id="services" aria-labelledby="services-catalog-heading">
       <div class="container">
         <div class="section-header">
           <span class="section-badge">Municipal Catalog</span>
@@ -203,8 +202,8 @@
       </div>
     </section>
 
-    <!-- Contact & Helpdesk Information Section -->
-    <section class="section" id="contact-section" aria-labelledby="contact-heading">
+    <!-- Contact & Helpdesk Information Section (#contact) -->
+    <section class="section" id="contact" aria-labelledby="contact-heading">
       <div class="container">
         <div class="section-header">
           <span class="section-badge">Support &amp; Assistance</span>
@@ -301,7 +300,7 @@
           </div>
           <div class="meta-item">
             <span class="meta-label">Statutory Fee</span>
-            <span class="meta-val" id="modal-service-fee">Free</span>
+            <span class="meta-val fee-highlight" id="modal-service-fee">Free of Charge</span>
           </div>
           <div class="meta-item">
             <span class="meta-label">Availability</span>

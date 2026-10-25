@@ -3,12 +3,12 @@
  * Validates admin credentials, checks role, and establishes admin session.
  */
 
-import { apiFetch, checkDbHealth, updateDbStatusPill, setCachedCsrfToken } from "./api.js";
+import { apiFetch, checkDbHealth, updateDbStatusPill, setCachedCsrfToken, setStoredToken, setStoredUser, startDbHealthPolling } from "./api.js";
 
 async function checkExistingAdminSession() {
   try {
     const res = await apiFetch("/admin/auth/me", { method: "GET" });
-    if (res.success && res.data && res.data.role === "admin") {
+    if (res.success && res.data && (res.data.role === "admin" || res.data.role === "super_admin" || res.data.admin_role)) {
       window.location.href = "admin-dashboard.html";
     }
   } catch {
@@ -65,9 +65,14 @@ function setupAdminLoginForm() {
         return;
       }
 
-      // Update CSRF token if returned in response
-      if (res.data?.csrf_token) {
-        setCachedCsrfToken(res.data.csrf_token);
+      if (res.data) {
+        if (res.data.token) {
+          setStoredToken(res.data.token);
+        }
+        setStoredUser(res.data, res.data.token);
+        if (res.data.csrf_token) {
+          setCachedCsrfToken(res.data.csrf_token);
+        }
       }
 
       // Redirect to Admin Dashboard
@@ -119,8 +124,7 @@ function clearFieldError(field) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const isHealthy = await checkDbHealth();
-  updateDbStatusPill(isHealthy);
+  startDbHealthPolling(30000);
 
   await checkExistingAdminSession();
   setupAdminLoginForm();

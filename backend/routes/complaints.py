@@ -251,10 +251,13 @@ def submit_complaint():
 def get_my_complaints():
     """Returns all complaints submitted by the logged-in citizen."""
     try:
-        user_id = ObjectId(session["user_id"])
-        cmps_col = get_collection("complaints")
+        user_id_str = session.get("user_id")
+        match_ids = [user_id_str]
+        if ObjectId.is_valid(user_id_str):
+            match_ids.append(ObjectId(user_id_str))
 
-        cursor = cmps_col.find({"user_id": user_id}).sort("created_at", -1)
+        cmps_col = get_collection("complaints")
+        cursor = cmps_col.find({"user_id": {"$in": match_ids}}).sort("created_at", -1)
         results = []
         for doc in cursor:
             results.append({

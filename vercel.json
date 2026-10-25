@@ -1,0 +1,93 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://municipal-service-portal-api.onrender.com/api/:path*"
+    },
+    {
+      "source": "/css/:path*",
+      "destination": "/frontend/css/:path*"
+    },
+    {
+      "source": "/js/:path*",
+      "destination": "/frontend/js/:path*"
+    },
+    {
+      "source": "/services",
+      "destination": "/frontend/services.html"
+    },
+    {
+      "source": "/services/:slug",
+      "destination": "/frontend/apply-service.html"
+    },
+    {
+      "source": "/submit-complaint",
+      "destination": "/frontend/submit-complaint.html"
+    },
+    {
+      "source": "/track-status",
+      "destination": "/frontend/track-status.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/frontend/login.html"
+    },
+    {
+      "source": "/register",
+      "destination": "/frontend/register.html"
+    },
+    {
+      "source": "/user-dashboard",
+      "destination": "/frontend/user-dashboard.html"
+    },
+    {
+      "source": "/admin-login",
+      "destination": "/frontend/admin-login.html"
+    },
+    {
+      "source": "/admin-dashboard",
+      "destination": "/frontend/admin-dashboard.html"
+    },
+    {
+      "source": "/service-management",
+      "destination": "/frontend/service-management.html"
+    },
+    {
+      "source": "/citizens",
+      "destination": "/frontend/citizens.html"
+    },
+    {
+      "source": "/reports",
+      "destination": "/frontend/reports.html"
+    },
+    {
+      "source": "/admin-applications",
+      "destination": "/frontend/admin-applications.html"
+    },
+    {
+      "source": "/admin-complaints",
+      "destination": "/frontend/admin-complaints.html"
+    },
+    {
+      "source": "/admin-audit-logs",
+      "destination": "/frontend/admin-audit-logs.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/frontend/$1"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    }
+  ]
+}

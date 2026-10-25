@@ -1,9 +1,9 @@
 /**
- * Municipal Service Portal - Administrative Audit Logs & Compliance
- * Handles querying, pagination, dynamic filtering, and raw payload inspection.
+ * Municipal Service Portal - Administrative Audit Logs & Compliance Module (ESM)
+ * Queries immutable audit trails, dynamic filtering, pagination, inspection modal, and CSV export.
  */
 
-import { apiGet, apiPost } from './api.js';
+import { apiRequest, showToast, getAuthUser, logoutUser, escapeHtml } from './api.js';
 
 let currentPage = 1;
 const pageSize = 20;
@@ -22,79 +22,189 @@ let currentFilters = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-  await checkAdminSession();
-  checkHealth();
+  await verifyAdminSession();
+  initSidebar();
   setupFilterHandlers();
   setupModalHandlers();
   setupPaginationHandlers();
-  fetchAuditLogs(1);
+  await fetchAuditLogs(1);
 });
 
-/**
- * Validates active admin session and renders officer email.
- */
-async function checkAdminSession() {
+async function verifyAdminSession() {
+  let user = null;
   try {
-    const res = await apiGet('/api/admin/auth/me');
-    if (!res.success) {
-      window.location.href = '/admin-login.html';
-      return;
+    const res = await apiRequest("/admin/auth/me");
+    if (res.ok && res.success && res.data) {
+      user = res.data;
     }
-    const displayEl = document.getElementById('admin-user-display');
-    if (displayEl) {
-      displayEl.textContent = res.data.email || 'Officer';
-    }
+  } catch (_) {}
 
-    const logoutBtn = document.getElementById('btn-admin-logout');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', async () => {
-        try {
-          await apiPost('/api/admin/auth/logout', {});
-        } finally {
-          window.location.href = '/admin-login.html';
-        }
+  if (!user) {
+    user = await getAuthUser();
+  }
+
+  const role = user?.admin_role || user?.role;
+  if (!user || !["super_admin", "admin", "officer", "viewer"].includes(role)) {
+    window.location.href = 'admin-login.html?redirect=admin-audit-logs.html';
+    return;
+  }
+  const display = document.getElementById('admin-user-display');
+  const roleDisplay = document.getElementById('admin-role-display');
+  const avatar = document.getElementById('admin-avatar-initials');
+
+  const displayName = user.full_name || user.name || user.email?.split('@')[0] || 'Admin';
+  if (display) display.textContent = displayName;
+  if (roleDisplay) roleDisplay.textContent = (user.admin_role || user.role || 'Admin').toUpperCase().replace('_', ' ');
+  if (avatar) avatar.textContent = displayName.substring(0, 2).toUpperCase();
+}
+
+function initSidebar() {
+  const toggleBtn = document.getElementById('sidebar-toggle-btn');
+  const sidebar = document.getElementById('admin-sidebar');
+  if (toggleBtn && sidebar) {
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+    });
+  }
+
+  const globalSearch = document.getElementById('global-search-input');
+  if (globalSearch) {
+    globalSearch.addEventListener('input', (e) => {
+      const searchInput = document.getElementById('filter-search');
+      if (searchInput) {
+        searchInput.value = e.target.value;
+        currentFilters.q = e.target.value.trim();
+        fetchAuditLogs(1);
+      }
+    });
+  }
+
+  const logoutBtn = document.getElementById('btn-admin-logout');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      await logoutUser({
+        buttonEl: logoutBtn,
+        redirect: 'admin-login.html'
       });
+    });
+  }
+
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted && !localStorage.getItem('msp_token') && !localStorage.getItem('msp_admin_token')) {
+      window.location.replace('admin-login.html');
     }
-  } catch (err) {
-    window.location.href = '/admin-login.html';
+  });
+}
+
+function setupFilterHandlers() {
+  const form = document.getElementById('audit-filter-form');
+  const resetBtn = document.getElementById('btn-reset-filters');
+  const refreshBtn = document.getElementById('btn-refresh-audit');
+  const exportBtn = document.getElementById('btn-export-audit');
+
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      currentFilters.q = document.getElementById('filter-search')?.value.trim() || '';
+      currentFilters.action = document.getElementById('filter-action')?.value || 'ALL';
+      currentFilters.actor_role = document.getElementById('filter-role')?.value || 'ALL';
+      currentFilters.target_collection = document.getElementById('filter-collection')?.value || 'ALL';
+      currentFilters.start_date = document.getElementById('filter-start-date')?.value || '';
+      currentFilters.end_date = document.getElementById('filter-end-date')?.value || '';
+      fetchAuditLogs(1);
+    });
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (form) form.reset();
+      currentFilters = {
+        action: 'ALL',
+        actor_role: 'ALL',
+        target_collection: 'ALL',
+        start_date: '',
+        end_date: '',
+        q: ''
+      };
+      fetchAuditLogs(1);
+    });
+  }
+
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => fetchAuditLogs(currentPage));
+  }
+
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      const params = new URLSearchParams();
+      if (currentFilters.action !== 'ALL') params.set('action', currentFilters.action);
+      if (currentFilters.actor_role !== 'ALL') params.set('actor_role', currentFilters.actor_role);
+      if (currentFilters.target_collection !== 'ALL') params.set('target_collection', currentFilters.target_collection);
+      if (currentFilters.start_date) params.set('start_date', currentFilters.start_date);
+      if (currentFilters.end_date) params.set('end_date', currentFilters.end_date);
+      if (currentFilters.q) params.set('q', currentFilters.q);
+      window.open(`/api/admin/audit-logs/export?${params.toString()}`, '_blank');
+    });
   }
 }
 
-/**
- * Displays live database health status.
- */
-async function checkHealth() {
-  const dot = document.getElementById('db-status-dot');
-  const text = document.getElementById('db-status-text');
-  try {
-    const res = await apiGet('/api/health');
-    if (res.success && res.data.database === 'connected') {
-      dot.className = 'status-dot dot-online';
-      text.textContent = 'MongoDB Connected';
-    } else {
-      dot.className = 'status-dot dot-offline';
-      text.textContent = 'Database Unavailable';
-    }
-  } catch {
-    dot.className = 'status-dot dot-offline';
-    text.textContent = 'Connection Error';
+function setupPaginationHandlers() {
+  const prevBtn = document.getElementById('btn-prev-page');
+  const nextBtn = document.getElementById('btn-next-page');
+
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) fetchAuditLogs(currentPage - 1);
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      if (currentPage < totalPages) fetchAuditLogs(currentPage + 1);
+    });
   }
 }
 
-/**
- * Fetches audit logs from backend with active filters and pagination.
- */
+function setupModalHandlers() {
+  const modal = document.getElementById('audit-detail-modal');
+  const closeBtn = document.getElementById('btn-close-audit-modal');
+  const dismissBtn = document.getElementById('btn-dismiss-audit-modal');
+  const copyBtn = document.getElementById('btn-copy-payload');
+
+  const closeModal = () => modal?.classList.add('d-none');
+
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  if (dismissBtn) dismissBtn.addEventListener('click', closeModal);
+
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      const payloadText = document.getElementById('modal-payload-box')?.textContent;
+      if (payloadText) {
+        navigator.clipboard.writeText(payloadText).then(() => {
+          showToast('JSON payload copied to clipboard.', 'success');
+        }).catch(() => {
+          showToast('Unable to copy JSON.', 'warning');
+        });
+      }
+    });
+  }
+}
+
 async function fetchAuditLogs(page = 1) {
   currentPage = page;
   const tbody = document.getElementById('audit-tbody');
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="6" class="text-center py-6 text-muted">
-        <div class="spinner"></div>
-        <p class="mt-2 text-xs">Querying database audit trail...</p>
-      </td>
-    </tr>
-  `;
+  const countText = document.getElementById('audit-count-text');
+
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center py-6 text-muted">
+          Querying audit trail from MongoDB database...
+        </td>
+      </tr>
+    `;
+  }
 
   try {
     const params = new URLSearchParams({
@@ -121,37 +231,47 @@ async function fetchAuditLogs(page = 1) {
       params.set('q', currentFilters.q);
     }
 
-    const res = await apiGet(`/api/admin/audit-logs?${params.toString()}`);
+    const res = await apiRequest(`/admin/audit-logs?${params.toString()}`);
+    if (res.ok && res.success && res.data) {
+      cachedLogs = res.data.logs || [];
+      const pagination = res.data.pagination || {};
+      totalPages = pagination.total_pages || 1;
+      totalRecords = pagination.total_records || 0;
 
-    if (!res.success) {
-      showAlert(res.error?.message || 'Failed to load audit logs.', 'danger');
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Error retrieving audit records.</td></tr>`;
-      return;
+      if (countText) countText.textContent = `${totalRecords}`;
+
+      if (!filtersPopulated && res.data.filter_options) {
+        populateFilterOptions(res.data.filter_options);
+        filtersPopulated = true;
+      }
+
+      renderTable(cachedLogs);
+      renderPagination();
+    } else {
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center py-4 text-danger">
+              Failed to query audit trail: ${escapeHtml(res.error?.message || 'Database error')}
+            </td>
+          </tr>
+        `;
+      }
     }
-
-    cachedLogs = res.data.logs || [];
-    const pagination = res.data.pagination || {};
-    totalPages = pagination.total_pages || 1;
-    totalRecords = pagination.total_records || 0;
-
-    // Populate dropdowns once
-    if (!filtersPopulated && res.data.filter_options) {
-      populateFilterOptions(res.data.filter_options);
-      filtersPopulated = true;
-    }
-
-    renderTable(cachedLogs);
-    renderPagination();
-
   } catch (err) {
-    showAlert('Network error while querying audit logs.', 'danger');
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Network error. Please try again.</td></tr>`;
+    console.error('Failed to query audit logs:', err);
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center py-4 text-danger">
+            Network error communicating with backend API.
+          </td>
+        </tr>
+      `;
+    }
   }
 }
 
-/**
- * Dynamically fills filter select dropdowns from available data.
- */
 function populateFilterOptions(options) {
   const actionSelect = document.getElementById('filter-action');
   const colSelect = document.getElementById('filter-collection');
@@ -175,19 +295,17 @@ function populateFilterOptions(options) {
   }
 }
 
-/**
- * Renders audit log rows into the table.
- */
 function renderTable(logs) {
   const tbody = document.getElementById('audit-tbody');
+  if (!tbody) return;
 
   if (!logs || logs.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="text-center py-6 text-muted">
-          <div style="font-size: 2rem; margin-bottom: 8px;">📋</div>
+        <td colspan="6" class="text-center py-8 text-muted">
+          <div style="font-size: 2rem; margin-bottom: 8px;">📜</div>
           <strong>No audit log records found.</strong>
-          <p class="text-xs mt-1">There are no recorded system actions matching your current filter criteria.</p>
+          <p class="text-xs mt-1">There are no system actions matching your active filters.</p>
         </td>
       </tr>
     `;
@@ -195,226 +313,106 @@ function renderTable(logs) {
   }
 
   tbody.innerHTML = logs.map(log => {
-    const dateFormatted = formatDate(log.created_at);
-    const badgeClass = getActionBadgeClass(log.action);
+    const dateFormatted = log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A';
     const actorRole = log.actor_role || 'system';
-    const targetCol = log.target_collection || '-';
+    const actorEmail = log.actor_email || log.actor_id || 'System Process';
+    const targetCol = log.target_collection || 'general';
     const targetId = log.target_id || '-';
-    const ip = log.ip || 'internal';
+    const ipAddr = log.ip_address || '127.0.0.1';
 
     return `
       <tr>
-        <td class="text-xs text-muted" style="white-space: nowrap;">${escapeHtml(dateFormatted)}</td>
         <td>
-          <span class="badge badge-audit ${badgeClass}">${escapeHtml(log.action)}</span>
-        </td>
-        <td class="text-xs">
-          <span class="badge" style="font-size:0.7rem; background:#f1f5f9; color:#334155;">${escapeHtml(actorRole)}</span>
-          <div class="font-mono text-muted text-xs mt-1" style="max-width:140px; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(log.actor_id || '')}">
-            ${escapeHtml(log.actor_id || 'system')}
-          </div>
-        </td>
-        <td class="text-xs">
-          <strong>${escapeHtml(targetCol)}</strong>
-          <div class="font-mono text-muted text-xs" style="max-width:160px; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(targetId)}">
-            ${escapeHtml(targetId)}
-          </div>
+          <span class="text-xs font-mono text-muted">${escapeHtml(dateFormatted)}</span>
         </td>
         <td>
-          <span class="ip-pill">${escapeHtml(ip)}</span>
+          <span class="badge ${getActionBadgeClass(log.action)}">${escapeHtml(log.action)}</span>
         </td>
         <td>
-          <button 
-            type="button" 
-            class="btn btn-xs btn-outline btn-inspect" 
-            data-id="${escapeHtml(log.id)}"
-          >
-            Inspect Payload
+          <div class="font-bold text-xs text-neutral-900">${escapeHtml(actorEmail)}</div>
+          <span class="badge badge-neutral text-xs">${escapeHtml(actorRole)}</span>
+        </td>
+        <td>
+          <div class="text-xs font-medium">${escapeHtml(targetCol)}</div>
+          <code class="text-xs text-muted">${escapeHtml(targetId)}</code>
+        </td>
+        <td>
+          <code class="text-xs">${escapeHtml(ipAddr)}</code>
+        </td>
+        <td class="text-right">
+          <button type="button" class="btn btn-xs btn-outline btn-inspect-log" data-id="${escapeHtml(log.id)}">
+            🔍 Inspect
           </button>
         </td>
       </tr>
     `;
   }).join('');
 
-  // Attach inspection handlers
-  document.querySelectorAll('.btn-inspect').forEach(btn => {
+  tbody.querySelectorAll('.btn-inspect-log').forEach(btn => {
     btn.addEventListener('click', () => {
-      const logId = btn.getAttribute('data-id');
-      const item = cachedLogs.find(l => l.id === logId);
-      if (item) {
-        openInspectionModal(item);
-      }
+      const logId = btn.dataset.id;
+      const logRecord = cachedLogs.find(l => l.id === logId);
+      if (logRecord) openAuditDetailModal(logRecord);
     });
   });
 }
 
-/**
- * Returns CSS badge class depending on event type.
- */
 function getActionBadgeClass(action = '') {
-  const act = action.toUpperCase();
-  if (act.includes('LOGIN') || act.includes('LOGOUT')) return 'badge-audit-login';
-  if (act.includes('CREATE') || act.includes('REGISTER') || act.includes('SUBMIT')) return 'badge-audit-create';
-  if (act.includes('STATUS') || act.includes('AVAILABILITY')) return 'badge-audit-status';
-  if (act.includes('UPDATE') || act.includes('CHANGE')) return 'badge-audit-update';
-  return 'badge-audit-default';
+  const a = action.toLowerCase();
+  if (a.includes('approve') || a.includes('verified') || a.includes('resolve')) return 'badge-success';
+  if (a.includes('reject') || a.includes('delete') || a.includes('suspend')) return 'badge-danger';
+  if (a.includes('update') || a.includes('review') || a.includes('assign')) return 'badge-info';
+  if (a.includes('create') || a.includes('login') || a.includes('submit')) return 'badge-warning';
+  return 'badge-neutral';
 }
 
-/**
- * Updates pagination bar numbers and buttons.
- */
 function renderPagination() {
   const infoEl = document.getElementById('pagination-info');
-  const pageDisplay = document.getElementById('current-page-display');
   const prevBtn = document.getElementById('btn-prev-page');
   const nextBtn = document.getElementById('btn-next-page');
+  const currentDisplay = document.getElementById('current-page-display');
 
-  if (totalRecords === 0) {
-    infoEl.textContent = 'No records to display';
-    pageDisplay.textContent = 'Page 1 of 1';
-    prevBtn.disabled = true;
-    nextBtn.disabled = true;
-    return;
+  if (infoEl) {
+    infoEl.textContent = `Showing page ${currentPage} of ${totalPages || 1} (${totalRecords} audit events)`;
+  }
+  if (currentDisplay) {
+    currentDisplay.textContent = `Page ${currentPage} of ${totalPages || 1}`;
   }
 
-  const start = (currentPage - 1) * pageSize + 1;
-  const end = Math.min(currentPage * pageSize, totalRecords);
-  infoEl.textContent = `Showing ${start}–${end} of ${totalRecords} events`;
-  pageDisplay.textContent = `Page ${currentPage} of ${totalPages}`;
-
-  prevBtn.disabled = currentPage <= 1;
-  nextBtn.disabled = currentPage >= totalPages;
+  if (prevBtn) prevBtn.disabled = currentPage <= 1;
+  if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
 }
 
-/**
- * Connects previous/next pagination buttons.
- */
-function setupPaginationHandlers() {
-  const prevBtn = document.getElementById('btn-prev-page');
-  const nextBtn = document.getElementById('btn-next-page');
-
-  prevBtn.addEventListener('click', () => {
-    if (currentPage > 1) {
-      fetchAuditLogs(currentPage - 1);
-    }
-  });
-
-  nextBtn.addEventListener('click', () => {
-    if (currentPage < totalPages) {
-      fetchAuditLogs(currentPage + 1);
-    }
-  });
-}
-
-/**
- * Opens detailed inspection modal with before/after payload diff.
- */
-function openInspectionModal(log) {
+function openAuditDetailModal(log) {
   const modal = document.getElementById('audit-detail-modal');
-  document.getElementById('modal-audit-badge').textContent = log.action;
-  document.getElementById('modal-audit-badge').className = `badge badge-audit ${getActionBadgeClass(log.action)}`;
-  document.getElementById('modal-audit-id').textContent = `ID: ${log.id}`;
-  document.getElementById('modal-timestamp').textContent = formatDate(log.created_at);
-  document.getElementById('modal-actor').textContent = `${log.actor_role} (${log.actor_id || 'system'})`;
-  document.getElementById('modal-target-col').textContent = log.target_collection || '-';
-  document.getElementById('modal-target-id').textContent = log.target_id || '-';
-  document.getElementById('modal-ip').textContent = log.ip || 'N/A';
+  if (!modal) return;
 
+  const titleEl = document.getElementById('modal-audit-title');
+  const badgeEl = document.getElementById('modal-audit-badge');
+  const idEl = document.getElementById('modal-audit-id');
+  const timeEl = document.getElementById('modal-timestamp');
+  const actorEl = document.getElementById('modal-actor');
+  const colEl = document.getElementById('modal-target-col');
+  const targetIdEl = document.getElementById('modal-target-id');
+  const ipEl = document.getElementById('modal-ip');
   const payloadBox = document.getElementById('modal-payload-box');
-  payloadBox.textContent = JSON.stringify(log.before_after_summary || {}, null, 2);
+
+  if (titleEl) titleEl.textContent = log.action || 'Audit Event';
+  if (badgeEl) {
+    badgeEl.textContent = log.action || 'ACTION';
+    badgeEl.className = `badge ${getActionBadgeClass(log.action)}`;
+  }
+  if (idEl) idEl.textContent = `Log ID: ${log.id}`;
+  if (timeEl) timeEl.textContent = log.created_at ? new Date(log.created_at).toUTCString() : 'N/A';
+  if (actorEl) actorEl.textContent = `${log.actor_email || log.actor_id} (Role: ${log.actor_role || 'system'})`;
+  if (colEl) colEl.textContent = log.target_collection || 'general';
+  if (targetIdEl) targetIdEl.textContent = log.target_id || '-';
+  if (ipEl) ipEl.textContent = log.ip_address || '127.0.0.1';
+
+  if (payloadBox) {
+    const details = log.details || {};
+    payloadBox.textContent = JSON.stringify(details, null, 2);
+  }
 
   modal.classList.remove('d-none');
-}
-
-/**
- * Wires up modal dismissal and clipboard copy.
- */
-function setupModalHandlers() {
-  const modal = document.getElementById('audit-detail-modal');
-  const closeBtn = document.getElementById('btn-close-audit-modal');
-  const dismissBtn = document.getElementById('btn-dismiss-audit-modal');
-  const copyBtn = document.getElementById('btn-copy-payload');
-
-  const closeModal = () => modal.classList.add('d-none');
-
-  if (closeBtn) closeBtn.addEventListener('click', closeModal);
-  if (dismissBtn) dismissBtn.addEventListener('click', closeModal);
-  if (modal) {
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal();
-    });
-  }
-
-  if (copyBtn) {
-    copyBtn.addEventListener('click', () => {
-      const text = document.getElementById('modal-payload-box').textContent;
-      navigator.clipboard.writeText(text).then(() => {
-        const orig = copyBtn.textContent;
-        copyBtn.textContent = 'Copied!';
-        setTimeout(() => { copyBtn.textContent = orig; }, 1500);
-      });
-    });
-  }
-}
-
-/**
- * Handles filter form submit and reset.
- */
-function setupFilterHandlers() {
-  const form = document.getElementById('audit-filter-form');
-  const resetBtn = document.getElementById('btn-reset-filters');
-
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    currentFilters.q = document.getElementById('filter-search').value.trim();
-    currentFilters.action = document.getElementById('filter-action').value;
-    currentFilters.actor_role = document.getElementById('filter-role').value;
-    currentFilters.target_collection = document.getElementById('filter-collection').value;
-    currentFilters.start_date = document.getElementById('filter-start-date').value;
-    currentFilters.end_date = document.getElementById('filter-end-date').value;
-
-    fetchAuditLogs(1);
-  });
-
-  resetBtn.addEventListener('click', () => {
-    form.reset();
-    currentFilters = {
-      action: 'ALL',
-      actor_role: 'ALL',
-      target_collection: 'ALL',
-      start_date: '',
-      end_date: '',
-      q: ''
-    };
-    fetchAuditLogs(1);
-  });
-}
-
-function showAlert(msg, type = 'info') {
-  const el = document.getElementById('audit-alert');
-  if (!el) return;
-  el.className = `alert alert-${type}`;
-  el.textContent = msg;
-  el.classList.remove('d-none');
-  setTimeout(() => el.classList.add('d-none'), 5000);
-}
-
-function formatDate(isoStr) {
-  if (!isoStr) return '-';
-  try {
-    const d = new Date(isoStr);
-    return d.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
-  } catch {
-    return isoStr;
-  }
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }
