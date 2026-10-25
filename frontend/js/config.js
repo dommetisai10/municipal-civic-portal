@@ -12,8 +12,8 @@
  *   location.reload();
  */
 
-// Production Render Web Service Backend URL (replace with your live Render URL after creating the service)
-export const PRODUCTION_API_URL = 'https://municipal-service-portal-api.onrender.com';
+// Production Render Web Service Backend URL
+export const PRODUCTION_API_URL = 'https://municipal-civic-portal.onrender.com';
 
 // Local Development Backend URL
 export const LOCAL_API_URL = 'http://127.0.0.1:5000';
