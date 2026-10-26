@@ -14,14 +14,22 @@
   <!-- Dashboard Header -->
   <header class="dashboard-header" role="banner">
     <div class="dash-header-container">
-      <div class="dash-brand">
-        <a href="index.html" class="brand-link" aria-label="Portal Home">
-          <div class="brand-icon" aria-hidden="true">MSP</div>
-          <div class="brand-text">
-            <span class="brand-name dynamic-portal-name">Municipal Service Portal</span>
-            <span class="brand-tagline">Citizen Services Workspace</span>
-          </div>
-        </a>
+      <div class="dash-brand-wrapper">
+        <button class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" aria-label="Toggle Dashboard Menu" aria-expanded="false" aria-controls="dashboard-sidebar">
+          <span class="hamburger-icon" aria-hidden="true">☰</span>
+        </button>
+        <div class="dash-brand">
+          <a href="index.html" class="brand-link" aria-label="Portal Home">
+            <div class="brand-icon" aria-hidden="true">MSP</div>
+            <div class="brand-text">
+              <span class="brand-name dynamic-portal-name">
+                <span class="brand-full-title">Municipal Service Portal</span>
+                <span class="brand-short-title">Civic Portal</span>
+              </span>
+              <span class="brand-tagline">Citizen Services Workspace</span>
+            </div>
+          </a>
+        </div>
       </div>
 
       <div class="dash-user-panel">
@@ -34,7 +42,7 @@
           🔔 <span class="badge-count" id="unread-notif-count">0</span>
         </button>
 
-        <div class="user-greeting">
+        <div class="user-greeting" id="dash-user-greeting">
           <span class="greeting-role">Citizen</span>
           <span class="greeting-name" id="user-display-name">Loading...</span>
         </div>
@@ -44,10 +52,20 @@
     </div>
   </header>
 
+  <!-- Mobile Sidebar Backdrop -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+
   <!-- Dashboard Body Layout -->
   <div class="dashboard-layout">
     <!-- Sidebar Navigation -->
-    <aside class="dashboard-sidebar" aria-label="Dashboard Navigation">
+    <aside class="dashboard-sidebar" id="dashboard-sidebar" aria-label="Dashboard Navigation">
+      <div class="sidebar-mobile-header">
+        <div class="sidebar-mobile-title">
+          <span class="sidebar-mobile-badge">Citizen Workspace</span>
+          <span class="sidebar-mobile-user" id="sidebar-user-name">Menu</span>
+        </div>
+        <button class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Close navigation menu">&times;</button>
+      </div>
       <nav class="sidebar-nav">
         <ul class="sidebar-links">
           <li>

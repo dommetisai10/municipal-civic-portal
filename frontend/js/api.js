@@ -590,3 +590,31 @@ export async function logoutUser(options = {}) {
 
   return { success: true };
 }
+
+// Automatically initialize public mobile navigation toggle if present on page
+if (typeof document !== 'undefined') {
+  const initMobileMenu = () => {
+    const toggle = document.getElementById('mobile-menu-toggle');
+    const nav = document.getElementById('main-nav');
+    if (toggle && nav && !toggle._hasMobileMenuBound) {
+      toggle._hasMobileMenuBound = true;
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = nav.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', String(isOpen));
+      });
+      document.addEventListener('click', (e) => {
+        if (nav.classList.contains('open') && !nav.contains(e.target) && !toggle.contains(e.target)) {
+          nav.classList.remove('open');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMobileMenu);
+  } else {
+    initMobileMenu();
+  }
+}

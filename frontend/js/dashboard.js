@@ -20,9 +20,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // Populate user display info
+  // Populate user display info (compact in navbar, full in drawer & tooltip)
+  const fullName = currentUser.full_name || currentUser.name || currentUser.email || 'Citizen';
+  const firstName = fullName.includes('@') ? fullName.split('@')[0] : fullName.split(' ')[0];
   const nameEl = document.getElementById('user-display-name');
-  if (nameEl) nameEl.textContent = currentUser.full_name;
+  if (nameEl) {
+    nameEl.textContent = firstName;
+    nameEl.title = fullName;
+  }
+
+  const sidebarNameEl = document.getElementById('sidebar-user-name');
+  if (sidebarNameEl) sidebarNameEl.textContent = fullName;
 
   initSidebarNavigation();
   initLogoutButtons();
@@ -32,6 +40,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadAllComplaints();
   initProfileForm();
   initPasswordForm();
+
+  // Support direct URL hash routing (e.g. user-dashboard.html#applications)
+  if (window.location.hash) {
+    const sectionFromHash = window.location.hash.replace('#', '').trim();
+    if (sectionFromHash && document.getElementById(`section-${sectionFromHash}`)) {
+      switchSection(sectionFromHash);
+    }
+  }
 });
 
 /**
@@ -63,15 +79,58 @@ async function initSystemHealth() {
 }
 
 /**
- * Sidebar Tab Switching
+ * Sidebar Tab Switching & Mobile Drawer Controls
  */
 function initSidebarNavigation() {
+  const mobileToggle = document.getElementById('mobile-sidebar-toggle');
+  const sidebar = document.getElementById('dashboard-sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const closeBtn = document.getElementById('sidebar-close-btn');
+
+  function openSidebar() {
+    if (sidebar) sidebar.classList.add('open');
+    if (backdrop) backdrop.classList.add('active');
+    if (mobileToggle) mobileToggle.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('sidebar-open');
+  }
+
+  function closeSidebar() {
+    if (sidebar) sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('active');
+    if (mobileToggle) mobileToggle.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('sidebar-open');
+  }
+
+  if (mobileToggle) {
+    mobileToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (sidebar && sidebar.classList.contains('open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    });
+  }
+
+  if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+  if (backdrop) backdrop.addEventListener('click', closeSidebar);
+
+  // Close sidebar on ESC key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sidebar && sidebar.classList.contains('open')) {
+      closeSidebar();
+    }
+  });
+
   const links = document.querySelectorAll('.sidebar-link[data-section]');
   links.forEach(link => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const targetSection = link.getAttribute('data-section');
       switchSection(targetSection);
+      if (window.innerWidth <= 960) {
+        closeSidebar();
+      }
     });
   });
 
@@ -81,6 +140,9 @@ function initSidebarNavigation() {
       e.preventDefault();
       const target = btn.getAttribute('data-target');
       switchSection(target);
+      if (window.innerWidth <= 960) {
+        closeSidebar();
+      }
     });
   });
 
@@ -379,7 +441,13 @@ function initProfileForm() {
       currentUser.full_name = full_name;
       currentUser.mobile = mobile;
       currentUser.address = address;
-      setText('user-display-name', full_name);
+      const updatedFirstName = full_name.includes('@') ? full_name.split('@')[0] : full_name.split(' ')[0];
+      const updatedNameEl = document.getElementById('user-display-name');
+      if (updatedNameEl) {
+        updatedNameEl.textContent = updatedFirstName;
+        updatedNameEl.title = full_name;
+      }
+      setText('sidebar-user-name', full_name);
     } else {
       const msg = (res.error && res.error.message) || 'Failed to update profile.';
       showToast(msg, 'error');
