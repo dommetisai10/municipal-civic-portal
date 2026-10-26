@@ -77,10 +77,15 @@
       </button>
       <nav class="main-nav" id="main-nav" aria-label="Main Navigation">
         <ul class="nav-links">
-          <li><a href="/" class="nav-link">Home</a></li>
-          <li><a href="/services.html" class="nav-link">Services</a></li>
-          <li><a href="/track-status.html" class="nav-link">Track Status</a></li>
+          <li><a href="index.html#home" class="nav-link" id="nav-link-home">Home</a></li>
+          <li><a href="services.html" class="nav-link" id="nav-link-services">Services</a></li>
+          <li><a href="index.html#about" class="nav-link" id="nav-link-about">About</a></li>
+          <li><a href="index.html#contact" class="nav-link" id="nav-link-contact">Contact</a></li>
         </ul>
+        <div class="nav-actions" id="nav-auth-actions">
+          <a href="login.html" class="btn btn-sm btn-outline" id="nav-login-btn">Sign In</a>
+          <a href="register.html" class="btn btn-sm btn-primary" id="nav-register-btn">Sign Up</a>
+        </div>
       </nav>
     </div>
   </header>
@@ -94,9 +99,9 @@
         The civic service page or administrative resource you requested does not exist or has been moved to a new reference URL.
       </p>
       <div class="error-actions">
-        <a href="/" class="btn btn-primary">Return to Homepage</a>
-        <a href="/services.html" class="btn btn-outline">Explore Services Catalog</a>
-        <a href="/track-status.html" class="btn btn-outline">Track Reference Status</a>
+        <a href="index.html" class="btn btn-primary">Return to Homepage</a>
+        <a href="services.html" class="btn btn-outline">Explore Services Catalog</a>
+        <a href="track-status.html" class="btn btn-outline">Track Reference Status</a>
       </div>
     </div>
   </main>
@@ -106,5 +111,7 @@
       <p>&copy; 2026 Municipal Civic Administration. Official Civic Service Portal.</p>
     </div>
   </footer>
+
+  <script type="module" src="js/api.js"></script>
 </body>
 </html>

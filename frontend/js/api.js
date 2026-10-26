@@ -591,30 +591,94 @@ export async function logoutUser(options = {}) {
   return { success: true };
 }
 
-// Automatically initialize public mobile navigation toggle if present on page
-if (typeof document !== 'undefined') {
-  const initMobileMenu = () => {
-    const toggle = document.getElementById('mobile-menu-toggle');
-    const nav = document.getElementById('main-nav');
-    if (toggle && nav && !toggle._hasMobileMenuBound) {
-      toggle._hasMobileMenuBound = true;
-      toggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isOpen = nav.classList.toggle('open');
-        toggle.setAttribute('aria-expanded', String(isOpen));
-      });
-      document.addEventListener('click', (e) => {
-        if (nav.classList.contains('open') && !nav.contains(e.target) && !toggle.contains(e.target)) {
-          nav.classList.remove('open');
-          toggle.setAttribute('aria-expanded', 'false');
-        }
-      });
+/**
+ * Centralized, robust mobile navigation controller for civic portal public navbar.
+ * Ensures consistent toggling, accessible ARIA attributes, outside-click and Escape
+ * key dismissal, and link-click menu closing across all screen sizes.
+ */
+export function setupMobileNavbar() {
+  if (typeof document === 'undefined') return;
+
+  const toggle = document.getElementById('mobile-menu-toggle');
+  const nav = document.getElementById('main-nav');
+  if (!toggle || !nav) return;
+
+  if (toggle._hasMobileMenuBound) return;
+  toggle._hasMobileMenuBound = true;
+
+  let isMenuOpen = false;
+
+  const setMenuState = (open) => {
+    isMenuOpen = Boolean(open);
+    if (isMenuOpen) {
+      nav.classList.add('open');
+      nav.classList.add('nav-open');
+      toggle.setAttribute('aria-expanded', 'true');
+      toggle.setAttribute('aria-label', 'Close navigation menu');
+      toggle.textContent = '✕';
+    } else {
+      nav.classList.remove('open');
+      nav.classList.remove('nav-open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open navigation menu');
+      toggle.textContent = '☰';
     }
   };
 
+  const toggleMenu = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setMenuState(!isMenuOpen);
+  };
+
+  const closeMenu = () => {
+    if (isMenuOpen) {
+      setMenuState(false);
+    }
+  };
+
+  // Toggle button click listener
+  toggle.addEventListener('click', toggleMenu);
+
+  // Close when clicking outside of nav and toggle
+  document.addEventListener('click', (e) => {
+    if (isMenuOpen && !nav.contains(e.target) && !toggle.contains(e.target)) {
+      closeMenu();
+    }
+  });
+
+  // Close on Escape key press and return focus to toggle
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isMenuOpen) {
+      closeMenu();
+      toggle.focus();
+    }
+  });
+
+  // Close when clicking any link or action button inside the menu
+  nav.addEventListener('click', (e) => {
+    const target = e.target.closest('a, button');
+    if (target) {
+      closeMenu();
+    }
+  });
+
+  // Auto-close if screen expands above mobile breakpoint
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768 && isMenuOpen) {
+      closeMenu();
+    }
+  });
+}
+
+// Automatically initialize public mobile navigation toggle if present on page
+if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initMobileMenu);
+    document.addEventListener('DOMContentLoaded', setupMobileNavbar);
   } else {
-    initMobileMenu();
+    setupMobileNavbar();
   }
 }
+

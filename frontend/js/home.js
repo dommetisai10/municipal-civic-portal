@@ -4,7 +4,7 @@
  * in-page smooth scrolling with scroll-spy, search/category filtering, and interactive service detail modal.
  */
 
-import { apiRequest, showToast, getAuthUser, logoutUser, escapeHtml } from './api.js';
+import { apiRequest, showToast, getAuthUser, logoutUser, escapeHtml, setupMobileNavbar } from './api.js';
 
 let allServices = [];
 let activeCategory = 'ALL';
@@ -22,25 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Mobile Navigation Toggle & Auto-Close
+ * Mobile Navigation Toggle & Auto-Close (delegates to centralized controller)
  */
 function initMobileMenu() {
-  const toggleBtn = document.getElementById('mobile-menu-toggle');
-  const mainNav = document.getElementById('main-nav');
-  if (toggleBtn && mainNav) {
-    toggleBtn.addEventListener('click', () => {
-      const isOpen = mainNav.classList.toggle('open');
-      toggleBtn.setAttribute('aria-expanded', String(isOpen));
-    });
-
-    // Close mobile menu when clicking any nav link
-    mainNav.querySelectorAll('.nav-link').forEach(link => {
-      link.addEventListener('click', () => {
-        mainNav.classList.remove('open', 'nav-open');
-        toggleBtn.setAttribute('aria-expanded', 'false');
-      });
-    });
-  }
+  setupMobileNavbar();
 }
 
 /**
@@ -60,7 +45,10 @@ function initSmoothScroll() {
         const mainNav = document.getElementById('main-nav');
         const toggleBtn = document.getElementById('mobile-menu-toggle');
         if (mainNav) mainNav.classList.remove('open', 'nav-open');
-        if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+        if (toggleBtn) {
+          toggleBtn.setAttribute('aria-expanded', 'false');
+          toggleBtn.textContent = '☰';
+        }
 
         targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         try {
@@ -464,7 +452,7 @@ function renderGuestNav(authContainer) {
   regLink.href = 'register.html';
   regLink.className = 'btn btn-sm btn-primary';
   regLink.id = 'nav-register-btn';
-  regLink.textContent = 'Register';
+  regLink.textContent = 'Sign Up';
 
   authContainer.appendChild(loginLink);
   authContainer.appendChild(regLink);

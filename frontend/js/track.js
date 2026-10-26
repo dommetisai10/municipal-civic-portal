@@ -223,7 +223,7 @@ async function checkNavAuth() {
   function renderGuestNav() {
     authContainer.innerHTML = `
       <a href="login.html" class="btn btn-sm btn-outline" id="nav-login-btn">Sign In</a>
-      <a href="register.html" class="btn btn-sm btn-primary" id="nav-register-btn">Register</a>
+      <a href="register.html" class="btn btn-sm btn-primary" id="nav-register-btn">Sign Up</a>
     `;
   }
 
@@ -268,16 +268,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const yearEl = document.getElementById("footer-year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // Mobile menu toggle
-  const menuToggle = document.getElementById("mobile-menu-toggle");
-  const mainNav = document.getElementById("main-nav");
-  if (menuToggle && mainNav) {
-    menuToggle.addEventListener("click", () => {
-      const isExpanded = menuToggle.getAttribute("aria-expanded") === "true";
-      menuToggle.setAttribute("aria-expanded", !isExpanded);
-      mainNav.classList.toggle("nav-open");
-    });
-  }
 
   // Database connectivity pill with 30s background polling
   startDbHealthPolling(30000);

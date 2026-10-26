@@ -483,7 +483,7 @@ function updateNavCitizen(user) {
   function renderGuestNav() {
     authContainer.innerHTML = `
       <a href="login.html" class="btn btn-sm btn-outline" id="nav-login-btn">Sign In</a>
-      <a href="register.html" class="btn btn-sm btn-primary" id="nav-register-btn">Register</a>
+      <a href="register.html" class="btn btn-sm btn-primary" id="nav-register-btn">Sign Up</a>
     `;
   }
 
